@@ -347,7 +347,7 @@ const Feed = () => {
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Timeline Zulu (Histórico / Forecast)</p>
               </div>
-              <div className="relative h-12 flex items-center overflow-x-auto hide-scrollbar snap-x">
+              <div className="relative h-16 flex items-center overflow-x-auto hide-scrollbar snap-x">
                 <div className="flex gap-6 items-end min-w-full px-10">
                   {/* Dynamic Timeline Generation */}
                   {Array.from({ length: 5 }).map((_, i) => {
