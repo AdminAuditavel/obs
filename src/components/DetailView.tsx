@@ -54,26 +54,38 @@ const DetailView = () => {
     }
   };
 
-  // ... (handleReport stays same)
+  const handleReport = async () => {
+    if (!reportReason) return;
 
-  // ... (render)
+    try {
+      await reportPost(post.id, reportReason, reportComment);
+      setIsReportOpen(false);
+      setReportReason('');
+      setReportComment('');
+      alert('Denúncia enviada com sucesso. Nossa equipe irá analisar.');
+    } catch (error) {
+      console.error("Failed to report:", error);
+      alert("Erro ao enviar denúncia. Tente novamente.");
+    }
+  };
 
+  return (
+    <>
       <div className="flex flex-col px-4 py-4 bg-white dark:bg-[#1a212e] gap-4">
         <button
           onClick={handleConfirm}
           disabled={confirming || post.confirmedByMe}
-          className={`flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg active:scale-95 transition-transform ${
-            (confirming || post.confirmedByMe) 
-              ? 'bg-gray-400 cursor-not-allowed active:scale-100 shadow-none' 
+          className={`flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg active:scale-95 transition-transform ${(confirming || post.confirmedByMe)
+              ? 'bg-gray-400 cursor-not-allowed active:scale-100 shadow-none'
               : 'bg-success shadow-success/20'
-          }`}
+            }`}
         >
           <span className="material-symbols-outlined text-2xl">check_circle</span>
           <span className="text-base font-bold tracking-tight">
             {post.confirmedByMe ? 'Você já confirmou' : (confirming ? 'Confirmando...' : 'Confirmar Validade')}
           </span>
         </button>
-        
+
         {/* ... (reviewers avatars) ... */}
       </div>
 
@@ -83,19 +95,19 @@ const DetailView = () => {
         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
           <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">Comentários ({post.comments?.length || 0})</h3>
         </div>
-        
+
         {post.comments && post.comments.length > 0 ? (
           post.comments.map((comment, i) => (
-           <div key={i} className="flex gap-3 p-4 border-b border-gray-50 dark:border-gray-800/50">
-             <div className="h-10 w-10 rounded-full bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${comment.user.avatar}')` }}></div>
-             <div className="flex flex-col gap-1">
-               <div className="flex items-center gap-2">
-                 <span className="text-sm font-bold">{comment.user.name}</span>
-                 <span className="text-[10px] text-gray-400">{comment.timestamp}</span>
-               </div>
-               <p className="text-sm text-gray-700 dark:text-gray-300">{comment.text}</p>
-             </div>
-           </div>
+            <div key={i} className="flex gap-3 p-4 border-b border-gray-50 dark:border-gray-800/50">
+              <div className="h-10 w-10 rounded-full bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${comment.user.avatar}')` }}></div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold">{comment.user.name}</span>
+                  <span className="text-[10px] text-gray-400">{comment.timestamp}</span>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{comment.text}</p>
+              </div>
+            </div>
           ))
         ) : (
           <div className="p-8 text-center text-gray-400 text-sm">
@@ -119,57 +131,56 @@ const DetailView = () => {
         </button>
       </div>
 
-  {/* Report Modal */ }
-  {
-    isReportOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div className="bg-white dark:bg-[#1a212e] rounded-xl w-full max-w-sm p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-          <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Reportar Publicação</h3>
+      {/* Report Modal */}
+      {
+        isReportOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-[#1a212e] rounded-xl w-full max-w-sm p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Reportar Publicação</h3>
 
-          <div className="space-y-3 mb-4">
-            <p className="text-sm text-gray-500 mb-2">Selecione o motivo:</p>
-            {['Spam / Irrelevante', 'Informação Incorreta', 'Conteúdo Ofensivo', 'Outro'].map((reason) => (
-              <button
-                key={reason}
-                onClick={() => setReportReason(reason)}
-                className={`w-full text-left px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${reportReason === reason
-                  ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-              >
-                {reason}
-              </button>
-            ))}
+              <div className="space-y-3 mb-4">
+                <p className="text-sm text-gray-500 mb-2">Selecione o motivo:</p>
+                {['Spam / Irrelevante', 'Informação Incorreta', 'Conteúdo Ofensivo', 'Outro'].map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => setReportReason(reason)}
+                    className={`w-full text-left px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${reportReason === reason
+                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                      : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                className="w-full h-24 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none resize-none mb-4"
+                placeholder="Detalhes adicionais (opcional)..."
+                value={reportComment}
+                onChange={(e) => setReportComment(e.target.value)}
+              ></textarea>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsReportOpen(false)}
+                  className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleReport}
+                  disabled={!reportReason}
+                  className={`flex-1 py-2.5 rounded-lg font-bold text-white transition-colors ${!reportReason ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30'}`}
+                >
+                  Enviar Report
+                </button>
+              </div>
+            </div>
           </div>
-
-          <textarea
-            className="w-full h-24 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none resize-none mb-4"
-            placeholder="Detalhes adicionais (opcional)..."
-            value={reportComment}
-            onChange={(e) => setReportComment(e.target.value)}
-          ></textarea>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => setIsReportOpen(false)}
-              className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleReport}
-              disabled={!reportReason}
-              className={`flex-1 py-2.5 rounded-lg font-bold text-white transition-colors ${!reportReason ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30'}`}
-            >
-              Enviar Report
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-    </div >
+        )
+      }
+    </>
   );
 };
 
