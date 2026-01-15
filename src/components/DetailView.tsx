@@ -116,8 +116,8 @@ const DetailView = () => {
               toggleLike(post.id);
             }}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${post.likedByMe
-                ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
-                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+              ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
+              : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
           >
             <span className={`material-symbols-outlined !text-[20px] ${post.likedByMe ? 'fill-1' : ''}`}>thumb_up</span>
@@ -129,11 +129,18 @@ const DetailView = () => {
       <div className="flex flex-col px-4 py-4 bg-white dark:bg-[#1a212e] gap-4">
         <button
           onClick={handleConfirm}
-          disabled={confirming}
-          className={`flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg active:scale-95 transition-transform ${confirming ? 'bg-gray-400' : 'bg-success shadow-success/20'}`}
+          disabled={confirming || post.confirmedByMe}
+          className={`flex w-full items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg transition-transform ${post.confirmedByMe
+              ? 'bg-green-600/60 cursor-default shadow-none'
+              : confirming
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 shadow-green-600/20 cursor-pointer active:scale-95'
+            }`}
         >
           <span className="material-symbols-outlined text-2xl">check_circle</span>
-          <span className="text-base font-bold tracking-tight">{confirming ? 'Confirmando...' : 'Confirmar Validade'}</span>
+          <span className="text-base font-bold tracking-tight">
+            {post.confirmedByMe ? 'Confirmado' : (confirming ? 'Confirmando...' : 'Confirmar Validade')}
+          </span>
         </button>
 
         <div className="flex items-center gap-3 py-1">
