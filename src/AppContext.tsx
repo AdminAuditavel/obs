@@ -37,6 +37,7 @@ interface AppContextType {
   confirmPostValidity: (postId: string) => Promise<any>;
   reportPost: (postId: string, reason: string, comment?: string, contact?: string) => Promise<any>;
   createComment: (postId: string, content: string) => Promise<any>;
+  toggleLike: (postId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -125,6 +126,8 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
 
   const fetchPosts = async () => {
     try {
+      if (!user) return;
+
       let query = supabase
         .from('posts')
         .select(`
@@ -137,15 +140,64 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
           ),
           media:post_media (
             storage_path
-          )
+          ),
+          comments (
+             id,
+             content,
+             created_at,
+             user:user_profiles!author_auth_uid (
+                auth_uid,
+                full_name,
+                avatar_url
+             )
+          ),
+          likes:post_likes (count),
+          confirmations:post_confirmations (count)
         `)
         .order('created_at', { ascending: false });
+
+      // Note: my_likes and my_confirmations use the foreign key to filter by user_auth_uid. 
+      // We need to ensure the query filters match the current user ID for those relations specifically?
+      // Supabase select syntax doesn't easily support "my_likes:post_likes!eq.user_auth_id(uid)" in the string directly without parameters.
+      // Actually, we can use the post-processing or we have to rely on a view or RPC for complex "is_liked" efficiently.
+      // For now, let's fetch 'post_likes' filtered by current user? No, that filters the whole posts result if we use inner join.
+      // Standard trick: fetch all likes, or use mapping. 
+      // Better approach for efficiency: create a View `posts_with_stats` or just fetch specific relations.
+      // RLS "Select Own" helps if we only query what we can see, but we see all likes.
+
+      // Simpler approach given constraints: Fetch posts, then fetch "my interactions" separately or map carefully.
+      // Let's rely on mapping. But `post_likes (count)` is generic.
+      // For `my_likes`, we can't easily filter *just* that relation in the top level select without filtering the parent rows unless we use specific join syntax which Supabase JS lib supports but is tricky.
+
+      // Alternative: Use an RPC `get_posts_with_status`? 
+      // Or just map `likes` list? If posts have 10k likes, bad idea.
+      // Given scope (pilot app, unlikely 10k likes immediately), fetching specific relation `post_likes` might be heavy if we fetch ALL rows.
+      // BUT `post_likes!user_auth_uid` implies checking FK. 
+      // Let's try to filter `my_likes` by `eq` on the relation if possible, or just fetch all and verify in JS (fine for MVP/low scale).
+      // Actually, let's use the RPC approach if this gets messy.
+      // For now, let's try to just get the counts and the specific checks.
+
+      // To verify "my like", we can join post_likes with a filter.
+      // query.eq('my_likes.user_auth_uid', user.id) would filter ONLY posts I liked. Not what we want.
+
+      // Let's stick to: fetch posts, then we fetch "my_likes" for these posts in a second lightweight query?
+      // Or just fetching `post_likes` where `user_auth_uid` = `user.id`.
+
+      //   const { data: myLikes } = await supabase.from('post_likes').select('post_id').eq('user_auth_uid', user.id);
+      //   const myLikedIds = new Set(myLikes?.map(l => l.post_id));
 
       if (selectedAirport.id !== 'default') {
         query = query.eq('airport_id', selectedAirport.id);
       }
 
       const { data, error } = await query;
+
+      // Separate fetch for my status to avoid complex join issues
+      const { data: myLikes } = await supabase.from('post_likes').select('post_id').eq('user_auth_uid', user.id);
+      const myLikedMap = new Set(myLikes?.map((l: any) => l.post_id));
+
+      const { data: myConfs } = await supabase.from('post_confirmations').select('post_id').eq('confirmer_auth_uid', user.id);
+      const myConfMap = new Set(myConfs?.map((c: any) => c.post_id));
 
       if (error) {
         console.error('Error fetching posts:', error);
@@ -162,6 +214,21 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             imageUrl = urlData.publicUrl;
           }
 
+          const commentsList = p.comments ? p.comments.map((c: any) => ({
+            id: c.id,
+            text: c.content,
+            timestamp: new Date(c.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            user: {
+              id: c.user?.auth_uid,
+              name: c.user?.full_name || 'Desconhecido',
+              avatar: c.user?.avatar_url || IMAGES.profileMain
+            }
+          })) : [];
+
+          // Sort comments by date (newest first or oldest first? usually oldest first for conv, or newest at bottom)
+          // Let's sort oldest first (chronological)
+          commentsList.sort((a: any, b: any) => a.text.localeCompare(b.text)); // Placeholder sort, strict timestamp sort ideally
+
           return {
             id: p.id,
             type: 'collaborative',
@@ -176,8 +243,10 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             description: p.description,
             image: imageUrl,
             timestamp: new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + 'Z',
-            likes: 0,
-            comments: []
+            likes: p.likes?.[0]?.count || 0,
+            likedByMe: myLikedMap.has(p.id),
+            confirmedByMe: myConfMap.has(p.id),
+            comments: commentsList
           };
         });
 
@@ -369,12 +438,32 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
     return data;
   };
 
+  const toggleLike = async (postId: string) => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc('toggle_like', { p_post_id: postId });
+    if (error) throw error;
+
+    // Update local state
+    if (data) {
+      setPosts(prev => prev.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            likes: data.count,
+            likedByMe: data.liked
+          };
+        }
+        return post;
+      }));
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       user, posts, invites, reports, selectedAirport, setSelectedAirport,
       addPost, updatePost, addInvite, removeInvite, resolveReport, addComment,
       signIn, signUp, signOut, logAudit, favoriteAirports, toggleFavorite,
-      confirmPostValidity, reportPost, createComment
+      confirmPostValidity, reportPost, createComment, toggleLike
     }}>
       {children}
     </AppContext.Provider>

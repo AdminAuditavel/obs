@@ -8,7 +8,7 @@ import { Airport } from '../AppContext';
 
 const Feed = () => {
   const navigate = useNavigate();
-  const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite } = useApp();
+  const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike } = useApp();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Airport[]>([]);
@@ -262,7 +262,14 @@ const Feed = () => {
         <div className="flex flex-col gap-4 p-4">
           {filteredPosts.length > 0 ? (
             filteredPosts.map((post: any) => (
-              <PostCard key={post.id} post={post} onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')} />
+              filteredPosts.map((post: any) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')}
+                  onLikeToggle={() => toggleLike(post.id)}
+                />
+              ))
             ))
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center text-gray-500">
@@ -486,12 +493,19 @@ const TimeMarker = ({ time, height, opacity, active }: any) => (
   </div>
 );
 
-const PostCard = ({ post, onClick }: any) => {
+const PostCard = ({ post, onClick, onLikeToggle }: any) => {
   const isOfficial = post.type === 'official';
   const cardBg = isOfficial ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50' : 'bg-white dark:bg-[#1a2233] border-gray-200 dark:border-gray-800';
 
+  const handleLikeClick = (e: any) => {
+    e.stopPropagation();
+    if (onLikeToggle) {
+      onLikeToggle();
+    }
+  };
+
   return (
-    <div onClick={onClick} className={`flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer ${cardBg}`}>
+    <div onClick={onClick} className={`flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:bg-opacity-90 ${cardBg}`}>
       <div className="flex items-start justify-between">
         <div className="flex gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden ${isOfficial ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-800'}`}>
@@ -514,12 +528,17 @@ const PostCard = ({ post, onClick }: any) => {
           <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{post.title}</p>
           <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">{post.description}</p>
           {!isOfficial && (
-            <div className="flex gap-3 mt-2">
-              <button className="flex items-center gap-1 text-gray-500 text-xs">
-                <span className="material-symbols-outlined !text-[16px]">thumb_up</span> {post.likes}
+            <div className="flex gap-4 mt-2">
+              <button
+                onClick={handleLikeClick}
+                className={`flex items-center gap-1 text-xs font-medium transition-colors ${post.likedByMe ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <span className={`material-symbols-outlined !text-[18px] ${post.likedByMe ? 'fill-1' : ''}`}>thumb_up</span>
+                {post.likes > 0 ? post.likes : '0'}
               </button>
-              <button className="flex items-center gap-1 text-gray-500 text-xs">
-                <span className="material-symbols-outlined !text-[16px]">chat_bubble</span> {post.comments.length}
+              <button className="flex items-center gap-1 text-gray-500 text-xs font-medium hover:text-gray-700">
+                <span className="material-symbols-outlined !text-[18px]">chat_bubble</span>
+                {post.comments ? post.comments.length : 0}
               </button>
             </div>
           )}

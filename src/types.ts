@@ -25,6 +25,8 @@ export interface Post {
   image?: string;
   timestamp: string;
   likes: number;
+  likedByMe?: boolean;
+  confirmedByMe?: boolean;
   comments: Comment[];
   isVerified?: boolean;
 }
