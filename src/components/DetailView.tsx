@@ -6,7 +6,7 @@ import { IMAGES } from '../constants';
 const DetailView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { posts, createComment, confirmPostValidity, reportPost, user } = useApp();
+  const { posts, createComment, confirmPostValidity, reportPost, toggleLike, user } = useApp();
   const [commentText, setCommentText] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -107,6 +107,23 @@ const DetailView = () => {
         <p className="text-[#0c121d] dark:text-gray-200 text-lg font-medium leading-relaxed">
           {post.description}
         </p>
+
+        {/* Like Button & Stats */}
+        <div className="flex pt-4">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleLike(post.id);
+            }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${post.likedByMe
+                ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
+                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+          >
+            <span className={`material-symbols-outlined !text-[20px] ${post.likedByMe ? 'fill-1' : ''}`}>thumb_up</span>
+            <span className="text-sm font-bold">{post.likes > 0 ? post.likes : 'Curtir'}</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col px-4 py-4 bg-white dark:bg-[#1a212e] gap-4">
@@ -181,8 +198,8 @@ const DetailView = () => {
                   key={reason}
                   onClick={() => setReportReason(reason)}
                   className={`w-full text-left px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${reportReason === reason
-                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-                      : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                    : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                 >
                   {reason}
