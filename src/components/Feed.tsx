@@ -104,11 +104,34 @@ const Feed = () => {
     );
   };
 
+  // Time Filter State
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
   const filteredPosts = posts.filter((post: any) => {
     // 1. Filter by Type
     if (!selectedTypes.includes(post.type)) return false;
     // 2. Filter by Category (if any selected)
     if (selectedCategories.length > 0 && !selectedCategories.includes(post.category || 'Geral')) return false;
+
+    // 3. Filter by Time (if selected)
+    if (selectedTime) {
+      const selectedHour = parseInt(selectedTime); // e.g., "10" from "10Z"
+      let postHour = -1;
+
+      if (post.timestamp.toLowerCase().includes('ago') || post.timestamp.toLowerCase().includes('atrás') || post.timestamp.toLowerCase().includes('há')) {
+        // Relative time: estimate based on current time
+        const minutes = parseInt(post.timestamp.replace(/\D/g, '')) || 0;
+        const now = new Date();
+        const postDate = new Date(now.getTime() - (minutes * 60000));
+        postHour = postDate.getUTCHours();
+      } else if (post.timestamp.endsWith('Z')) {
+        // Absolute time: "14:30Z"
+        postHour = parseInt(post.timestamp.split(':')[0]);
+      }
+
+      if (postHour !== selectedHour) return false;
+    }
+
     return true;
   });
 
@@ -356,25 +379,32 @@ const Feed = () => {
                     const hour = (currentHour - 2 + i + 24) % 24; // Range: -2 to +2 hours
                     const isCurrent = i === 2; // Center item
                     const timeLabel = `${hour.toString().padStart(2, '0')}Z`;
+                    const isSelected = selectedTime === timeLabel;
 
                     if (isCurrent) {
                       return (
-                        <div key={i} className="flex flex-col items-center gap-1 snap-center">
-                          <div className="h-10 w-[3px] bg-primary rounded-full relative">
-                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-[#1a2233]"></div>
+                        <div
+                          key={i}
+                          onClick={() => setSelectedTime(isSelected ? null : timeLabel)}
+                          className={`flex flex-col items-center gap-1 snap-center cursor-pointer transition-all ${isSelected ? 'scale-110' : 'hover:scale-105'}`}
+                        >
+                          <div className={`h-10 w-[3px] rounded-full relative transition-colors ${isSelected ? 'bg-blue-600 dark:bg-blue-400' : 'bg-primary'}`}>
+                            <div className={`absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white dark:border-[#1a2233] transition-colors ${isSelected ? 'bg-blue-600 dark:bg-blue-400' : 'bg-primary'}`}></div>
                           </div>
-                          <p className="text-[12px] font-mono font-bold text-primary">{timeLabel}</p>
+                          <p className={`text-[12px] font-mono font-bold transition-colors ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-primary'}`}>{timeLabel}</p>
                         </div>
                       );
                     }
 
                     return (
-                      <TimeMarker
-                        key={i}
-                        time={timeLabel}
-                        height={i % 2 === 0 ? "h-4" : "h-6"}
-                        opacity={Math.abs(i - 2) === 1 ? "opacity-60" : "opacity-40"}
-                      />
+                      <div key={i} onClick={() => setSelectedTime(isSelected ? null : timeLabel)} className="cursor-pointer">
+                        <TimeMarker
+                          time={timeLabel}
+                          height={i % 2 === 0 ? "h-4" : "h-6"}
+                          opacity={isSelected ? "opacity-100 text-blue-600 dark:text-blue-400 scale-110" : (Math.abs(i - 2) === 1 ? "opacity-60" : "opacity-40")}
+                          active={isSelected}
+                        />
+                      </div>
                     );
                   })}
                 </div>
@@ -449,10 +479,10 @@ const StatusChip = ({ color, icon, label }: any) => {
   )
 }
 
-const TimeMarker = ({ time, height, opacity }: any) => (
-  <div className={`flex flex-col items-center gap-1 snap-center ${opacity}`}>
-    <div className={`${height} w-[2px] bg-gray-400`}></div>
-    <p className="text-[10px] font-mono">{time}</p>
+const TimeMarker = ({ time, height, opacity, active }: any) => (
+  <div className={`flex flex-col items-center gap-1 snap-center transition-all ${opacity}`}>
+    <div className={`${height} w-[2px] ${active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-400'}`}></div>
+    <p className={`text-[10px] font-mono ${active ? 'font-bold text-blue-600 dark:text-blue-400' : ''}`}>{time}</p>
   </div>
 );
 
