@@ -126,7 +126,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
 
   const fetchPosts = async () => {
     try {
-      if (!user) return;
+      // if (!user) return; // Removed to allow public access
 
       let query = supabase
         .from('posts')
@@ -193,11 +193,20 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
       const { data, error } = await query;
 
       // Separate fetch for my status to avoid complex join issues
-      const { data: myLikes } = await supabase.from('post_likes').select('post_id').eq('user_auth_uid', user.id);
-      const myLikedMap = new Set(myLikes?.map((l: any) => l.post_id));
+      let myLikedMap = new Set();
+      let myConfMap = new Set();
 
-      const { data: myConfs } = await supabase.from('post_confirmations').select('post_id').eq('confirmer_auth_uid', user.id);
-      const myConfMap = new Set(myConfs?.map((c: any) => c.post_id));
+      if (user) {
+        const { data: myLikes } = await supabase.from('post_likes').select('post_id').eq('user_auth_uid', user.id);
+        if (myLikes) {
+          myLikedMap = new Set(myLikes.map((l: any) => l.post_id));
+        }
+
+        const { data: myConfs } = await supabase.from('post_confirmations').select('post_id').eq('confirmer_auth_uid', user.id);
+        if (myConfs) {
+          myConfMap = new Set(myConfs.map((c: any) => c.post_id));
+        }
+      }
 
       if (error) {
         console.error('Error fetching posts:', error);
