@@ -197,7 +197,7 @@ const Feed = () => {
                   <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
                   <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
                 </div>
-                <p className="text-primary text-sm font-mono font-bold">12:00Z</p>
+                <p className="text-primary text-sm font-mono font-bold">{timeZ}</p>
               </div>
 
               <div className="flex gap-2 flex-wrap">
@@ -303,8 +303,8 @@ const Feed = () => {
                         key={cat}
                         onClick={() => toggleCategoryFilter(cat)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedCategories.includes(cat)
-                            ? 'bg-primary text-white border-primary shadow-sm'
-                            : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                          ? 'bg-primary text-white border-primary shadow-sm'
+                          : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary/50'
                           }`}
                       >
                         {cat}
@@ -349,19 +349,34 @@ const Feed = () => {
               </div>
               <div className="relative h-12 flex items-center overflow-x-auto hide-scrollbar snap-x">
                 <div className="flex gap-6 items-end min-w-full px-10">
-                  <TimeMarker time="09Z" height="h-4" opacity="opacity-40" />
-                  <TimeMarker time="10Z" height="h-4" opacity="opacity-40" />
-                  <TimeMarker time="11Z" height="h-6" opacity="opacity-60" />
+                  {/* Dynamic Timeline Generation */}
+                  {Array.from({ length: 5 }).map((_, i) => {
+                    const now = new Date();
+                    const currentHour = now.getUTCHours();
+                    const hour = (currentHour - 2 + i + 24) % 24; // Range: -2 to +2 hours
+                    const isCurrent = i === 2; // Center item
+                    const timeLabel = `${hour.toString().padStart(2, '0')}Z`;
 
-                  <div className="flex flex-col items-center gap-1 snap-center">
-                    <div className="h-10 w-[3px] bg-primary rounded-full relative">
-                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-[#1a2233]"></div>
-                    </div>
-                    <p className="text-[12px] font-mono font-bold text-primary">12Z</p>
-                  </div>
+                    if (isCurrent) {
+                      return (
+                        <div key={i} className="flex flex-col items-center gap-1 snap-center">
+                          <div className="h-10 w-[3px] bg-primary rounded-full relative">
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-[#1a2233]"></div>
+                          </div>
+                          <p className="text-[12px] font-mono font-bold text-primary">{timeLabel}</p>
+                        </div>
+                      );
+                    }
 
-                  <TimeMarker time="13Z" height="h-6" opacity="opacity-40" />
-                  <TimeMarker time="14Z" height="h-4" opacity="opacity-20" />
+                    return (
+                      <TimeMarker
+                        key={i}
+                        time={timeLabel}
+                        height={i % 2 === 0 ? "h-4" : "h-6"}
+                        opacity={Math.abs(i - 2) === 1 ? "opacity-60" : "opacity-40"}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </div>
