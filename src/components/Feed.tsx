@@ -15,7 +15,15 @@ const Feed = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Filter States
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['official', 'collaborative', 'staff']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
   const isFavorited = favoriteAirports?.some(a => a.id === selectedAirport.id);
+
+  // Get unique categories from current posts
+  const uniqueCategories = Array.from(new Set(posts.map(p => p.category || 'Geral').filter(Boolean)));
 
   // Debounce search
   useEffect(() => {
@@ -84,7 +92,23 @@ const Feed = () => {
     setSearchResults([]);
   };
 
+  const toggleTypeFilter = (type: string) => {
+    setSelectedTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  const toggleCategoryFilter = (cat: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+  };
+
   const filteredPosts = posts.filter((post: any) => {
+    // 1. Filter by Type
+    if (!selectedTypes.includes(post.type)) return false;
+    // 2. Filter by Category (if any selected)
+    if (selectedCategories.length > 0 && !selectedCategories.includes(post.category || 'Geral')) return false;
     return true;
   });
 
@@ -199,77 +223,197 @@ const Feed = () => {
         {/* Feed Section */}
         <div className="flex items-center justify-between px-4 pt-2">
           <h3 className="text-[#0c121d] dark:text-white text-lg font-bold tracking-tight">Feed de Atividade</h3>
-          <button className="flex items-center gap-1 text-primary text-sm font-medium">
+          <button
+            onClick={() => setIsFilterOpen(true)}
+            className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg transition-colors ${(selectedCategories.length > 0 || selectedTypes.length < 3) ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:text-primary'
+              }`}
+          >
             <span className="material-symbols-outlined !text-[18px]">filter_list</span>
             Filtrar
+            {(selectedCategories.length > 0 || selectedTypes.length < 3) && (
+              <span className="flex h-2 w-2 rounded-full bg-primary ml-1"></span>
+            )}
           </button>
         </div>
 
         <div className="flex flex-col gap-4 p-4">
-          {filteredPosts.map((post: any) => (
-            <PostCard key={post.id} post={post} onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')} />
-          ))}
-        </div>
-      </main>
-
-      {/* Timeline */}
-      <div className="fixed bottom-[70px] left-0 right-0 z-30 max-w-[480px] mx-auto">
-        <div className="bg-white/95 dark:bg-[#1a2233]/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pt-3 pb-6 px-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Timeline Zulu (Histórico / Forecast)</p>
-          </div>
-          <div className="relative h-12 flex items-center overflow-x-auto hide-scrollbar snap-x">
-            <div className="flex gap-6 items-end min-w-full px-10">
-              <TimeMarker time="09Z" height="h-4" opacity="opacity-40" />
-              <TimeMarker time="10Z" height="h-4" opacity="opacity-40" />
-              <TimeMarker time="11Z" height="h-6" opacity="opacity-60" />
-
-              <div className="flex flex-col items-center gap-1 snap-center">
-                <div className="h-10 w-[3px] bg-primary rounded-full relative">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-[#1a2233]"></div>
-                </div>
-                <p className="text-[12px] font-mono font-bold text-primary">12Z</p>
-              </div>
-
-              <TimeMarker time="13Z" height="h-6" opacity="opacity-40" />
-              <TimeMarker time="14Z" height="h-4" opacity="opacity-20" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* FAB - Adjusted to stay within the max-w-[480px] container */}
-      <div className="fixed bottom-20 left-0 right-0 z-50 max-w-[480px] mx-auto pointer-events-none flex justify-end px-6">
-        <div className="group relative pointer-events-auto flex flex-col items-center">
-
-
-          <div className="mb-2 font-bold text-primary text-sm whitespace-nowrap bg-white/80 dark:bg-black/80 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm">
-            {timeZ}
-          </div>
-
-          <button
-            onClick={() => {
-              if (user?.role === 'registered') {
-                alert('Recurso disponível apenas para Colaboradores.');
-                return;
-              }
-              navigate(user ? '/create' : '/onboarding');
-            }}
-            className={`flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl hover:bg-blue-600 transition-colors active:scale-90 duration-150 ${user?.role === 'registered' ? 'opacity-40 grayscale cursor-not-allowed' : ''}`}
-          >
-            <span className="material-symbols-outlined !text-[28px]">photo_camera</span>
-          </button>
-
-          {user?.role === 'registered' && (
-            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 text-center z-50 pointer-events-none">
-              Recurso restrito a Colaboradores.
+          {filteredPosts.length > 0 ? (
+            filteredPosts.map((post: any) => (
+              <PostCard key={post.id} post={post} onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')} />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center text-gray-500">
+              <span className="material-symbols-outlined !text-[48px] mb-2 opacity-50">search_off</span>
+              <p>Nenhum post encontrado com os filtros atuais.</p>
+              <button onClick={() => { setSelectedTypes(['official', 'collaborative', 'staff']); setSelectedCategories([]); }} className="text-primary text-sm font-bold mt-2">
+                Limpar Filtros
+              </button>
             </div>
           )}
         </div>
-      </div>
+      </main>
+
+      {/* Filter Modal */}
+      {isFilterOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-[480px] bg-white dark:bg-[#1a2233] rounded-t-2xl shadow-xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Filtrar Feed</h3>
+              <button onClick={() => setIsFilterOpen(false)} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-4 space-y-6">
+              {/* Type Filter */}
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Mostrar Publicações de</p>
+                <div className="space-y-3">
+                  <FilterCheckbox
+                    label="Fontes Oficiais (METAR/TAF)"
+                    checked={selectedTypes.includes('official')}
+                    onChange={() => toggleTypeFilter('official')}
+                    icon="verified"
+                    iconColor="text-blue-500"
+                  />
+                  <FilterCheckbox
+                    label="Colaborações de Usuários"
+                    checked={selectedTypes.includes('collaborative')}
+                    onChange={() => toggleTypeFilter('collaborative')}
+                    icon="group"
+                    iconColor="text-green-500"
+                  />
+                  <FilterCheckbox
+                    label="Equipe / Staff"
+                    checked={selectedTypes.includes('staff')}
+                    onChange={() => toggleTypeFilter('staff')}
+                    icon="badge"
+                    iconColor="text-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Category Filter */}
+              {uniqueCategories.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Categorias</p>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueCategories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => toggleCategoryFilter(cat)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedCategories.includes(cat)
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                          }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">
+              <button
+                onClick={() => {
+                  setSelectedTypes(['official', 'collaborative', 'staff']);
+                  setSelectedCategories([]);
+                }}
+                className="flex-1 py-3 text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl"
+              >
+                Limpar
+              </button>
+              <button
+                onClick={() => setIsFilterOpen(false)}
+                className="flex-[2] py-3 text-sm font-bold text-white bg-primary rounded-xl shadow-lg shadow-primary/30"
+              >
+                Ver Resultados
+              </button>
+            </div>
+
+            {/* Safe Area for Mobile */}
+            <div className="h-6"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      {!isFilterOpen && (
+        <>
+          <div className="fixed bottom-[70px] left-0 right-0 z-30 max-w-[480px] mx-auto">
+            <div className="bg-white/95 dark:bg-[#1a2233]/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pt-3 pb-6 px-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Timeline Zulu (Histórico / Forecast)</p>
+              </div>
+              <div className="relative h-12 flex items-center overflow-x-auto hide-scrollbar snap-x">
+                <div className="flex gap-6 items-end min-w-full px-10">
+                  <TimeMarker time="09Z" height="h-4" opacity="opacity-40" />
+                  <TimeMarker time="10Z" height="h-4" opacity="opacity-40" />
+                  <TimeMarker time="11Z" height="h-6" opacity="opacity-60" />
+
+                  <div className="flex flex-col items-center gap-1 snap-center">
+                    <div className="h-10 w-[3px] bg-primary rounded-full relative">
+                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-[#1a2233]"></div>
+                    </div>
+                    <p className="text-[12px] font-mono font-bold text-primary">12Z</p>
+                  </div>
+
+                  <TimeMarker time="13Z" height="h-6" opacity="opacity-40" />
+                  <TimeMarker time="14Z" height="h-4" opacity="opacity-20" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="fixed bottom-20 left-0 right-0 z-50 max-w-[480px] mx-auto pointer-events-none flex justify-end px-6">
+            <div className="group relative pointer-events-auto flex flex-col items-center">
+              <div className="mb-2 font-bold text-primary text-sm whitespace-nowrap bg-white/80 dark:bg-black/80 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm">
+                {timeZ}
+              </div>
+
+              <button
+                onClick={() => {
+                  if (user?.role === 'registered') {
+                    alert('Recurso disponível apenas para Colaboradores.');
+                    return;
+                  }
+                  navigate(user ? '/create' : '/onboarding');
+                }}
+                className={`flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl hover:bg-blue-600 transition-colors active:scale-90 duration-150 ${user?.role === 'registered' ? 'opacity-40 grayscale cursor-not-allowed' : ''}`}
+              >
+                <span className="material-symbols-outlined !text-[28px]">photo_camera</span>
+              </button>
+
+              {user?.role === 'registered' && (
+                <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 text-center z-50 pointer-events-none">
+                  Recurso restrito a Colaboradores.
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
+
+// Helper Components
+const FilterCheckbox = ({ label, checked, onChange, icon, iconColor }: any) => (
+  <label className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+    <div className="flex items-center gap-3">
+      <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-[#1a2233] shadow-sm ${iconColor}`}>
+        <span className="material-symbols-outlined !text-[18px]">{icon}</span>
+      </div>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
+    </div>
+    <div className={`h-5 w-5 rounded border flex items-center justify-center transition-colors ${checked ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600'}`}>
+      {checked && <span className="material-symbols-outlined !text-[14px] text-white">check</span>}
+    </div>
+    <input type="checkbox" className="hidden" checked={checked} onChange={onChange} />
+  </label>
+);
 
 const StatusChip = ({ color, icon, label }: any) => {
   const colors: any = {
