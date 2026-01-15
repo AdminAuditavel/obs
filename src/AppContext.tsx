@@ -34,6 +34,9 @@ interface AppContextType {
   signIn: (email: string, pass: string) => Promise<void>;
   signUp: (email: string, pass: string, name: string, phone?: string, avatarUrl?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  confirmPostValidity: (postId: string) => Promise<any>;
+  reportPost: (postId: string, reason: string, comment?: string, contact?: string) => Promise<any>;
+  createComment: (postId: string, content: string) => Promise<any>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -304,11 +307,74 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
     }));
   };
 
+  const confirmPostValidity = async (postId: string) => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc('confirm_post', { p_post_id: postId });
+    if (error) throw error;
+    return data;
+  };
+
+  const reportPost = async (postId: string, reason: string, comment?: string, contact?: string) => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc('report_post', {
+      p_post_id: postId,
+      p_reason: reason,
+      p_comment: comment,
+      p_reporter_contact: contact
+    });
+    if (error) throw error;
+    return data;
+  };
+
+  const createComment = async (postId: string, content: string) => {
+    if (!user) return;
+    // Optimistic UI update is handled in the component or we can refetch/update local state here
+    // For now, let's just make the RPC call and return the result
+    const { data, error } = await supabase.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: content
+    });
+
+    if (error) throw error;
+
+    // Update local state if successful to show comment immediately
+    // Note: data contains the new comment object
+    if (data) {
+      // Helper to format timestamp if needed, but the object comes from DB
+      // We might need to adapt it slightly to match the client Post structure if it differs
+      // Current client Post.comments structure: {id, user, text, timestamp}
+      // RPC returns: {id, post_id, content, created_at, user: {id, name, avatar}}
+      const newComment = {
+        id: data.id,
+        text: data.content,
+        timestamp: 'Agora', // or format data.created_at
+        user: {
+          id: data.user.id,
+          name: data.user.name,
+          avatar: data.user.avatar || IMAGES.profileMain
+        }
+      };
+
+      setPosts(prev => prev.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, newComment]
+          };
+        }
+        return post;
+      }));
+    }
+
+    return data;
+  };
+
   return (
     <AppContext.Provider value={{
       user, posts, invites, reports, selectedAirport, setSelectedAirport,
       addPost, updatePost, addInvite, removeInvite, resolveReport, addComment,
-      signIn, signUp, signOut, logAudit, favoriteAirports, toggleFavorite
+      signIn, signUp, signOut, logAudit, favoriteAirports, toggleFavorite,
+      confirmPostValidity, reportPost, createComment
     }}>
       {children}
     </AppContext.Provider>
