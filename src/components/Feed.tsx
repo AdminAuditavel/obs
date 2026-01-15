@@ -262,14 +262,12 @@ const Feed = () => {
         <div className="flex flex-col gap-4 p-4">
           {filteredPosts.length > 0 ? (
             filteredPosts.map((post: any) => (
-              filteredPosts.map((post: any) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')}
-                  onLikeToggle={() => toggleLike(post.id)}
-                />
-              ))
+              <PostCard
+                key={post.id}
+                post={post}
+                onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')}
+                onLikeToggle={() => toggleLike(post.id)}
+              />
             ))
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center text-gray-500">

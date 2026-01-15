@@ -71,13 +71,55 @@ const DetailView = () => {
 
   return (
     <>
-      <div className="flex flex-col px-4 py-4 bg-white dark:bg-[#1a212e] gap-4">
+      <div className="flex flex-col bg-white dark:bg-[#1a212e]">
+        {/* Author Header */}
+        <div className="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-gray-800">
+          <button onClick={() => navigate(-1)} className="mr-2">
+            <span className="material-symbols-outlined text-gray-500">arrow_back</span>
+          </button>
+          <div className="h-10 w-10 rounded-full bg-cover bg-center border border-gray-200 dark:border-gray-700" style={{ backgroundImage: `url('${post.user.avatar}')` }}></div>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-[#0c121d] dark:text-white">{post.user.name}</span>
+              {post.type === 'official' && <span className="material-symbols-outlined text-blue-500 !text-[14px] fill-1">verified</span>}
+            </div>
+            <span className="text-xs text-gray-500">{post.timestamp}</span>
+          </div>
+          <div className="ml-auto">
+            <button onClick={() => setIsReportOpen(true)} className="p-2 text-gray-400 hover:text-red-500">
+              <span className="material-symbols-outlined !text-[20px]">flag</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Post Content */}
+        <div className="p-4 flex flex-col gap-4">
+          {post.category && (
+            <span className="self-start px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-bold uppercase tracking-tight">
+              {post.category}
+            </span>
+          )}
+
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{post.title}</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{post.description}</p>
+          </div>
+
+          {post.image && (
+            <div className="w-full rounded-xl overflow-hidden shadow-sm">
+              <img src={post.image} alt="Post attachment" className="w-full h-auto object-cover max-h-[400px]" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col px-4 pb-4 bg-white dark:bg-[#1a212e] gap-4">
         <button
           onClick={handleConfirm}
           disabled={confirming || post.confirmedByMe}
           className={`flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg active:scale-95 transition-transform ${(confirming || post.confirmedByMe)
-              ? 'bg-gray-400 cursor-not-allowed active:scale-100 shadow-none'
-              : 'bg-success shadow-success/20'
+            ? 'bg-gray-400 cursor-not-allowed active:scale-100 shadow-none'
+            : 'bg-success shadow-success/20'
             }`}
         >
           <span className="material-symbols-outlined text-2xl">check_circle</span>
