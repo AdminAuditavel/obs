@@ -1,0 +1,34 @@
+{
+  "name": "observer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.1",
+    "@capacitor/cli": "^7.4.5",
+    "@capacitor/core": "^8.0.1",
+    "@supabase/supabase-js": "^2.90.1",
+    "browser-image-compression": "^2.0.2",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.3",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.16.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.22.3"
+  },
+  "devDependencies": {
+    "@types/browser-image-compression": "^1.0.1",
+    "@types/node": "^22.14.0",
+    "@types/node-fetch": "^2.6.13",
+    "@types/pg": "^8.16.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

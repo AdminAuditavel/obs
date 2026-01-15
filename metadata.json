@@ -1,0 +1,8 @@
+{
+  "name": "Observer",
+  "description": "Collaborative situational awareness platform for aviation professionals.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
