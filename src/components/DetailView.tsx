@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { IMAGES } from '../constants';
+import { User } from '../types';
 
 const DetailView = () => {
   const { id } = useParams();
@@ -131,10 +132,10 @@ const DetailView = () => {
           onClick={handleConfirm}
           disabled={confirming || post.confirmedByMe}
           className={`flex w-full items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg transition-transform ${post.confirmedByMe
-              ? 'bg-green-600/60 cursor-default shadow-none'
-              : confirming
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-green-600 shadow-green-600/20 cursor-pointer active:scale-95'
+            ? 'bg-green-600/60 cursor-default shadow-none'
+            : confirming
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-green-600 shadow-green-600/20 cursor-pointer active:scale-95'
             }`}
         >
           <span className="material-symbols-outlined text-2xl">check_circle</span>
@@ -143,17 +144,42 @@ const DetailView = () => {
           </span>
         </button>
 
-        <div className="flex items-center gap-3 py-1">
-          <div className="flex -space-x-3 overflow-hidden">
-            <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a212e] bg-cover bg-center" style={{ backgroundImage: `url('${IMAGES.reviewer1}')` }}></div>
-            <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a212e] bg-cover bg-center" style={{ backgroundImage: `url('${IMAGES.reviewer2}')` }}></div>
-            <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a212e] bg-cover bg-center" style={{ backgroundImage: `url('${IMAGES.reviewer3}')` }}></div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full ring-2 ring-white dark:ring-[#1a212e] bg-gray-200 dark:bg-gray-700">
-              <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">+12</span>
+
+        {/* Facepile of commenters - Only show if there are comments */}
+        {post.comments.length > 0 && (() => {
+          // Get unique users from comments
+          const uniqueCommenters = Array.from(
+            new Map(post.comments.map((c: any) => [c.user.id, c.user])).values()
+          ) as User[];
+          const displayUsers = uniqueCommenters.slice(0, 3);
+          const remainingCount = uniqueCommenters.length - 3;
+
+          return (
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex -space-x-3 overflow-hidden">
+                {displayUsers.map((u) => (
+                  <div
+                    key={u.id}
+                    className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a212e] bg-cover bg-center"
+                    style={{ backgroundImage: `url('${u.avatar || IMAGES.avatar1}')` }}
+                    title={u.name}
+                  ></div>
+                ))}
+
+                {remainingCount > 0 && (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full ring-2 ring-white dark:ring-[#1a212e] bg-gray-200 dark:bg-gray-700">
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">+{remainingCount}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                {uniqueCommenters.length === 1
+                  ? `${uniqueCommenters[0].name.split(' ')[0]} comentou isso`
+                  : `Outros pilotos comentaram`}
+              </p>
             </div>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Outros pilotos confirmaram esta condição</p>
-        </div>
+          );
+        })()}
       </div>
 
       <div className="h-2 bg-gray-100 dark:bg-gray-900"></div>
