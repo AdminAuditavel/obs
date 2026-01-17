@@ -16,7 +16,7 @@ const DetailView = () => {
 
   const post = posts.find(p => p.id === id);
 
-  if (!post) return <div>Post not found</div>;
+  if (!post) return <div>Post não encontrado</div>;
 
   const handleCommentSubmit = async () => {
     if (commentText.trim()) {
@@ -93,7 +93,9 @@ const DetailView = () => {
         <div className="flex flex-col justify-center flex-1">
           <div className="flex items-center gap-2">
             <p className="text-[#0c121d] dark:text-white text-base font-bold leading-tight">{post.user.name}</p>
-            <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">{post.type || 'Collaborative'}</span>
+            <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+              {post.type === 'official' ? 'Fonte Oficial' : (post.type === 'staff' ? 'Equipe' : 'Colaborativo')}
+            </span>
           </div>
           <p className="text-[#4567a1] dark:text-gray-400 text-xs font-medium mt-1 uppercase">{post.timestamp} • 5.2nm away</p>
         </div>

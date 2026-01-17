@@ -23,7 +23,7 @@ const Feed = () => {
   const isFavorited = favoriteAirports?.some(a => a.id === selectedAirport.id);
 
   // Get unique categories from current posts
-  const uniqueCategories = Array.from(new Set(posts.map(p => p.category || 'Geral').filter(Boolean)));
+  const uniqueCategories = Array.from(new Set(posts.map(p => p.category || 'Geral').filter(Boolean))) as string[];
 
   // Debounce search
   useEffect(() => {
@@ -81,7 +81,7 @@ const Feed = () => {
 
       recognition.start();
     } else {
-      alert('Voice recognition not supported in this browser.');
+      alert('Reconhecimento de voz não suportado neste navegador.');
     }
   };
 
@@ -224,8 +224,8 @@ const Feed = () => {
               </div>
 
               <div className="flex gap-2 flex-wrap">
-                <StatusChip color="red" icon="warning" label="CRITICAL" />
-                <StatusChip color="blue" icon="air" label="WIND" />
+                <StatusChip color="red" icon="warning" label="CRÍTICO" />
+                <StatusChip color="blue" icon="air" label="VENTO" />
                 <StatusChip color="gray" icon="visibility" label="VIS" />
               </div>
 
@@ -514,7 +514,7 @@ const PostCard = ({ post, onClick, onLikeToggle }: any) => {
               <p className="text-[#0c121d] dark:text-white text-sm font-bold">{post.user?.name || "Desconhecido"}</p>
               {isOfficial && <span className="material-symbols-outlined text-blue-500 !text-[14px] fill-1">verified</span>}
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-[11px]">{isOfficial ? 'Official Source' : (post.type === 'staff' ? 'Staff Report' : 'User Report')} • {post.timestamp}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-[11px]">{isOfficial ? 'Fonte Oficial' : (post.type === 'staff' ? 'Relato da Equipe' : 'Relato de Usuário')} • {post.timestamp}</p>
           </div>
         </div>
         {post.category && <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-bold uppercase tracking-tight">{post.category}</span>}
