@@ -9,9 +9,6 @@ import { Airport } from '../AppContext';
 const Feed = () => {
   const navigate = useNavigate();
   const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike } = useApp();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Airport[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -87,7 +84,6 @@ const Feed = () => {
 
   const handleSelectAirport = (airport: Airport) => {
     setSelectedAirport(airport);
-    setIsSearchOpen(false);
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -137,47 +133,96 @@ const Feed = () => {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
-      {/* TopAppBar */}
-      <header className="sticky top-0 z-30 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white overflow-hidden p-0.5">
-            <img src="/app-logo.png" alt="Logo" className="h-full w-full object-contain" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1">
-              <h1 className="text-lg font-bold leading-tight tracking-tight">{selectedAirport.icao} - {selectedAirport.city}</h1>
-              <button
-                onClick={() => toggleFavorite(selectedAirport)}
-                className={`p-1 transition-colors ${isFavorited ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500'}`}
-              >
-                <span className={`material-symbols-outlined !text-[20px] ${isFavorited ? 'fill-1' : ''}`}>star</span>
-              </button>
+      {/* Header with Search Bar */}
+      <header className="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 py-2 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[800px] mx-auto w-full">
+          <div className="flex items-center gap-2 relative">
+            {/* Logo */}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white overflow-hidden p-0.5 shadow-sm border border-gray-100">
+              <img src="/app-logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
-            <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">{selectedAirport.name}</p>
-          </div>
-        </div>
 
-        {/* Search Bar - Right Aligned */}
-        {/* Search Trigger */}
-        <div className="flex items-center justify-end">
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            className="p-2 text-gray-500 hover:text-primary transition-colors flex items-center justify-center rounded-full active:bg-gray-100 dark:active:bg-gray-800"
-          >
-            <span className="material-symbols-outlined !text-[24px]">search</span>
-          </button>
+            {/* Floating Search Bar */}
+            <div className={`relative flex-1 flex items-center h-12 rounded-full bg-white dark:bg-[#1a2233] shadow-lg border border-gray-200 dark:border-gray-700 px-4 transition-all ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0' : ''}`}>
+              <span className="material-symbols-outlined text-gray-400 text-[20px]">search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Busque por ICAO ou Cidade..."
+                className="flex-1 bg-transparent border-none outline-none text-base text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full px-3"
+              />
+
+              <div className="flex items-center gap-1">
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <span className="material-symbols-outlined !text-[18px]">close</span>
+                  </button>
+                )}
+
+                <div className="h-5 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                <button
+                  onClick={startListening}
+                  className={`p-1.5 rounded-full transition-all ${isListening
+                    ? 'bg-red-100 text-red-500 animate-pulse'
+                    : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                  title="Pesquisa por voz"
+                >
+                  <span className="material-symbols-outlined !text-[20px]">{isListening ? 'mic' : 'mic'}</span>
+                </button>
+              </div>
+
+              {/* Dropdown Results */}
+              {searchResults.length > 0 && (
+                <div className="absolute top-12 left-0 right-0 bg-white dark:bg-[#1a2233] rounded-b-2xl shadow-xl border border-gray-200 dark:border-gray-700 border-t-0 overflow-hidden max-h-[60vh] overflow-y-auto z-50">
+                  <div className="h-[1px] bg-gray-100 dark:bg-gray-800 mx-4 mb-1"></div>
+                  {searchResults.map((airport: any) => (
+                    <button
+                      key={airport.id}
+                      onClick={() => handleSelectAirport(airport)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
+                          <span className="material-symbols-outlined !text-[18px]">flight_takeoff</span>
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-bold text-[#0c121d] dark:text-white block text-sm truncate">{airport.icao}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{airport.city}</span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[10px] text-gray-400 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded ml-2">{airport.name?.split(' ')[0]}</span>
+                    </button>
+                  ))}
+                  <div className="h-2"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Favorite Action */}
+            <button
+              onClick={() => toggleFavorite(selectedAirport)}
+              className={`p-2 shrink-0 rounded-full transition-colors flex items-center justify-center h-12 w-12 ${isFavorited ? 'bg-yellow-50 text-yellow-500 dark:bg-yellow-900/20' : 'bg-gray-50 text-gray-400 dark:bg-gray-800 hover:text-yellow-500'}`}
+            >
+              <span className={`material-symbols-outlined !text-[24px] ${isFavorited ? 'fill-1' : ''}`}>star</span>
+            </button>
+
+          </div>
         </div>
       </header>
 
       <main className="flex-1 pb-32">
         {/* Official Summary Card */}
-        <div className="p-4">
+        <div className="p-4 pt-2">
           <div className="flex flex-col items-stretch justify-start rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2233] overflow-hidden">
             <div className="p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                  <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
+                  {/* Airport Info integrated here since it's removed from header */}
+                  <span className="text-lg font-black text-[#0c121d] dark:text-white">{selectedAirport.icao}</span>
+                  <span className="text-gray-300">|</span>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{selectedAirport.city}</p>
                 </div>
                 <p className="text-primary text-sm font-mono font-bold">{timeZ}</p>
               </div>
@@ -404,20 +449,10 @@ const Feed = () => {
           </div>
         </>
       )}
-      {/* Search Modal */}
-      <SearchModal
-        isOpen={isSearchOpen}
-        onClose={() => { setIsSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        searchResults={searchResults}
-        handleSelectAirport={handleSelectAirport}
-        startListening={startListening}
-        isListening={isListening}
-      />
     </div>
   );
 };
+
 
 // Helper Components
 const FilterCheckbox = ({ label, checked, onChange, icon, iconColor }: any) => (
