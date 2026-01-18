@@ -30,6 +30,28 @@ const CreateObservation = () => {
   const [showToast, setShowToast] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // New state for quick actions
+  const setQuickReport = (type: string) => {
+    switch (type) {
+      case 'FOD':
+        setTitle('Objeto estranho (FOD)');
+        setCategory('FOD');
+        setDescription('FOD identificado na área de movimento. Requer inspeção.');
+        break;
+      case 'BIRDS':
+        setTitle('Atividade Aviária');
+        setCategory('Security'); // or specific Birds category
+        setDescription('Bando de pássaros avistado nas imediações da pista.');
+        break;
+      case 'TURB':
+        setTitle('Turbulência Moderada');
+        setCategory('Clima');
+        setDescription('Reporte de turbulência moderada na aproximação.');
+        break;
+    }
+    // Optionally auto-scroll to send or highlight fields
+  };
+
   // Airport Context Local State (initially global, or from post if editing)
   // If editing, we need to fetch the airport object if not in list? 
   // For simplicity, we assume we can stick to current global or try to match?
