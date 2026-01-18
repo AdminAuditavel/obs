@@ -21,7 +21,8 @@ serve(async (req) => {
       });
     }
 
-    const apiUrl = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json&hours=1&taf=false`;
+    // hours=96 (4 days) to capture last report for non-24h airports (e.g. closed weekend)
+    const apiUrl = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json&hours=96&taf=false`;
     console.log(`Fetching METAR for ${icao} from ${apiUrl}`);
 
     const response = await fetch(apiUrl);
