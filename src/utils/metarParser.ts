@@ -7,10 +7,19 @@ export interface ParsedMetar {
   ceiling_ft: number;
   ceiling_str: string;
   condition: string;
+  tooltips: {
+    wind: string;
+    visibility: string;
+    ceiling: string;
+    condition: string;
+  };
 }
 
 export const parseMetar = (raw: string): ParsedMetar => {
-  if (!raw) return { wind: 'N/A', visibility: 'N/A', vis_meters: 9999, ceiling: 'N/A', ceiling_ft: 10000, ceiling_str: 'N/A', condition: 'N/A' };
+  if (!raw) return { 
+    wind: 'N/A', visibility: 'N/A', vis_meters: 9999, ceiling: 'N/A', ceiling_ft: 10000, ceiling_str: 'N/A', condition: 'N/A',
+    tooltips: { wind: '', visibility: '', ceiling: '', condition: '' }
+  };
   
   const parts = raw.split(' ');
   let wind = 'N/A';
@@ -90,5 +99,49 @@ export const parseMetar = (raw: string): ParsedMetar => {
       condition = 'No Wx';
   }
 
-  return { wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition };
+  // Helpers for decoding
+  const getCloudDescription = (code: string) => {
+      const map: Record<string, string> = { 'FEW': 'Poucas Nuvens', 'SCT': 'Nuvens Esparsas', 'BKN': 'Nublado', 'OVC': 'Encoberto', 'VV': 'Céu Obscurecido' };
+      return map[code] || code;
+  };
+
+  const decodeCondition = (cond: string) => {
+     if (!cond || cond === 'N/A') return 'Sem condições significativas';
+     if (cond === 'NSW') return 'Nenhum tempo significativo';
+     if (cond === 'No Wx') return 'Sem condições significativas';
+
+     // Simple replacement map for common codes
+     let text = cond;
+     const replacements: [RegExp, string][] = [
+         [/-TSRA/g, 'Trovoada com chuva leve'],
+         [/\+TSRA/g, 'Trovoada com chuva forte'],
+         [/TSRA/g, 'Trovoada com chuva moderada'],
+         [/-RA/g, 'Chuva leve'],
+         [/\+RA/g, 'Chuva forte'],
+         [/RA/g, 'Chuva moderada'],
+         [/TS/g, 'Trovoada'],
+         [/SH/g, 'Pancadas'],
+         [/DZ/g, 'Chuvisco'],
+         [/BR/g, 'Névoa Úmida'],
+         [/FG/g, 'Nevoeiro'],
+         [/HZ/g, 'Névoa Seca'],
+         [/FU/g, 'Fumaça'],
+         [/VC/g, 'Nas vizinhanças'],
+     ];
+
+     replacements.forEach(([regex, replacement]) => {
+         text = text.replace(regex, replacement);
+     });
+     
+     return text;
+  };
+
+  const tooltips = {
+      wind: wind !== 'N/A' ? `Vento de ${wind.split('/')[0]} com ${wind.split('/')[1]}`.replace('kt', ' nós') : 'Sem dados de vento',
+      visibility: visibility !== 'N/A' ? `Visibilidade de ${visibility}` : 'Sem dados de visibilidade',
+      ceiling: ceiling_str !== 'N/A' && ceiling !== 'N/A' ? `${getCloudDescription(ceiling.substring(0,3))} a ${ceiling_str.replace("'", " pés")}` : (ceiling_str === 'Sem Teto' ? 'Céu claro / Sem teto' : 'Sem dados de teto'),
+      condition: decodeCondition(condition)
+  };
+
+  return { wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, tooltips };
 };

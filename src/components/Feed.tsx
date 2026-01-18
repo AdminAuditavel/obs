@@ -629,6 +629,14 @@ const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
   let condColor = 'blue';
   const c = parsed.condition;
 
+  // Logic for cloud icons based on coverage
+  let cloudIcon = 'cloud';
+  if (parsed.ceiling.includes('FEW') || parsed.ceiling.includes('SCT')) {
+    cloudIcon = 'partly_cloudy_day';
+  } else if (parsed.ceiling.includes('BKN') || parsed.ceiling.includes('OVC')) {
+    cloudIcon = 'cloud'; // darker/fuller cloud
+  }
+
   if (c.includes('TS') || c.includes('CB')) {
     condIcon = 'thunderstorm';
     condColor = 'red-dark'; // Storms are usually critical attention
@@ -642,7 +650,7 @@ const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
     condIcon = 'ac_unit';
     condColor = 'blue';
   } else if (c.includes('No Wx') || c.includes('NSW') || c.includes('CAVOK') || c.includes('CLR') || c.includes('SKC')) {
-    condIcon = 'sunny';
+    condIcon = 'check_circle'; // Clear/Sunny indicator
     condColor = 'blue';
   } else {
     condIcon = 'cloud'; // OVC/BKN general
@@ -650,15 +658,15 @@ const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
 
   return (
     <div className="grid grid-cols-4 gap-2 mb-3">
-      <WeatherBadgeSmall icon="air" label="Vento" value={parsed.wind} color="blue" />
-      <WeatherBadgeSmall icon="visibility" label="Visib." value={parsed.visibility} color={visColor} />
-      <WeatherBadgeSmall icon="cloud" label="Teto" value={parsed.ceiling_str !== 'N/A' ? parsed.ceiling_str : parsed.ceiling} color={ceilingColor} />
-      <WeatherBadgeSmall icon={condIcon} label="Condição" value={parsed.condition} color={condColor} />
+      <WeatherBadgeSmall icon="air" value={parsed.wind} color="blue" tooltip={parsed.tooltips.wind} />
+      <WeatherBadgeSmall icon="visibility" value={parsed.visibility} color={visColor} tooltip={parsed.tooltips.visibility} />
+      <WeatherBadgeSmall icon={cloudIcon} value={parsed.ceiling_str !== 'N/A' ? parsed.ceiling_str : parsed.ceiling} color={ceilingColor} tooltip={parsed.tooltips.ceiling} />
+      <WeatherBadgeSmall icon={condIcon} value={parsed.condition} color={condColor} tooltip={parsed.tooltips.condition} />
     </div>
   );
 }
 
-const WeatherBadgeSmall = ({ icon, label, value, color = 'blue' }: any) => {
+const WeatherBadgeSmall = ({ icon, value, color = 'blue', tooltip }: any) => {
   // Container always neutral
   const containerStyle = "bg-gray-50 dark:bg-gray-800/40 border-gray-100 dark:border-gray-800";
 
@@ -673,12 +681,9 @@ const WeatherBadgeSmall = ({ icon, label, value, color = 'blue' }: any) => {
   const activeColor = textColors[color] || textColors.blue;
 
   return (
-    <div className={`flex flex-col p-2.5 rounded-lg border ${containerStyle}`}>
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <span className={`material-symbols-outlined !text-[14px] ${activeColor}`}>{icon}</span>
-        <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500">{label}</span>
-      </div>
-      <span className={`text-xs font-bold truncate ${activeColor}`}>{value}</span>
+    <div title={tooltip} className={`flex flex-col items-center justify-center p-2.5 rounded-lg border cursor-help transition-all hover:bg-white dark:hover:bg-gray-800 ${containerStyle}`}>
+      <span className={`material-symbols-outlined !text-[24px] mb-1 ${activeColor}`}>{icon}</span>
+      <span className={`text-[11px] font-bold truncate ${activeColor}`}>{value && value !== 'N/A' ? value : '-'}</span>
     </div>
   );
 };
