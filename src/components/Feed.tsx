@@ -8,6 +8,7 @@ import { supabase } from '../supabaseClient';
 import { Airport } from '../AppContext';
 import { getWeather } from '../services/weatherService';
 import { UserBadge } from './UserBadge';
+import { parseMetar } from '../utils/metarParser';
 const Feed = () => {
   const navigate = useNavigate();
   const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike } = useApp();
@@ -292,13 +293,7 @@ const Feed = () => {
                 <FlightCategoryBadge category={flightCategory} />
               </div>
 
-              <div className="flex gap-2 flex-wrap">
-                <StatusChip color="red" icon="warning" label="CRÍTICO" />
-                <StatusChip color="blue" icon="air" label="VENTO" />
-                <StatusChip color="gray" icon="visibility" label="VIS" />
-              </div>
-
-              <div className="bg-gray-50 dark:bg-background-dark/50 rounded-lg p-3 border border-gray-100 dark:border-gray-800 min-h-[60px] flex items-center">
+              <div className="bg-gray-50 dark:bg-background-dark/50 rounded-lg p-3 border border-gray-100 dark:border-gray-800 min-h-[60px] flex items-center mb-3">
                 {isLoadingMetar ? (
                   <div className="flex items-center gap-2 text-gray-400 text-xs animate-pulse">
                     <span className="material-symbols-outlined !text-[16px] animate-spin">sync</span>
@@ -310,6 +305,10 @@ const Feed = () => {
                   </p>
                 )}
               </div>
+
+              {metar && !isLoadingMetar && (
+                <WeatherBadgesGrid rawMetar={metar} />
+              )}
 
               <button onClick={() => navigate(user ? '/official' : '/onboarding')} className="flex w-full cursor-pointer items-center justify-center rounded-lg h-10 bg-primary text-white text-sm font-bold gap-2 active:scale-95 transition-transform">
                 <span className="truncate">Detalhar Condições</span>
@@ -601,6 +600,29 @@ const StatusChip = ({ color, icon, label }: any) => {
     </div>
   )
 }
+
+const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
+  const parsed = parseMetar(rawMetar);
+
+  return (
+    <div className="grid grid-cols-2 gap-2 mb-3">
+      <WeatherBadgeSmall icon="air" label="Vento" value={parsed.wind} />
+      <WeatherBadgeSmall icon="visibility" label="Visib." value={parsed.visibility} />
+      <WeatherBadgeSmall icon="cloud" label="Teto" value={parsed.ceiling} />
+      <WeatherBadgeSmall icon="thunderstorm" label="Condição" value={parsed.condition} />
+    </div>
+  );
+}
+
+const WeatherBadgeSmall = ({ icon, label, value }: any) => (
+  <div className="flex flex-col p-2.5 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
+    <div className="flex items-center gap-1.5 mb-0.5">
+      <span className="material-symbols-outlined text-primary !text-[14px]">{icon}</span>
+      <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500">{label}</span>
+    </div>
+    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{value}</span>
+  </div>
+);
 
 const TimeMarker = ({ time, height, opacity, active }: any) => (
   <div className={`flex flex-col items-center gap-1 snap-center transition-all ${opacity}`}>
