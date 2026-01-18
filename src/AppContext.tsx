@@ -251,7 +251,10 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             title: p.title || p.description?.substring(0, 20) || 'Sem título',
             description: p.description,
             image: imageUrl,
-            timestamp: new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + 'Z',
+            timestamp: (() => {
+              const d = new Date(p.created_at);
+              return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}Z`;
+            })(),
             createdAt: p.created_at,
             likes: p.likes?.[0]?.count || 0,
             likedByMe: myLikedMap.has(p.id),

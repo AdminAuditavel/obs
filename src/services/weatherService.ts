@@ -25,14 +25,16 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
     }
 
     if (Array.isArray(data) && data.length > 0) {
+      const d = data[0];
       return {
-          raw: data[0].rawOb || data[0].raw_text,
-          station_id: data[0].icaoId || data[0].station_id,
-          observation_time: data[0].reportTime || data[0].observation_time,
-          flight_category: data[0].flightCategory || data[0].flight_category,
-          temp_c: data[0].temp,
-          wind_dir_degrees: data[0].wdir,
-          wind_speed_kt: data[0].wspd
+          raw: d.rawOb || d.raw_text,
+          station_id: d.icaoId || d.station_id,
+          observation_time: d.reportTime || d.observation_time,
+          flight_category: d.flightCategory || d.flight_category,
+          temp_c: d.temp || d.temp_c,
+          // Support multiple potential key formats from checkwx/aviationweather
+          wind_dir_degrees: d.wdir ?? d.wind_dir_degrees ?? d.wind_dir,
+          wind_speed_kt: d.wspd ?? d.wind_speed_kt ?? d.wind_speed
       };
     }
     

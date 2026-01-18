@@ -214,14 +214,14 @@ const CreateObservation = () => {
         ctx.fillStyle = weather?.flight_category === 'VFR' ? '#4ade80' :
           weather?.flight_category === 'IFR' ? '#f87171' : '#FFFFFF';
 
-        const windText = weather ? `WIND: ${weather.wind}` : '';
+        const windText = weather ? `VENTO: ${weather.wind}` : '';
         ctx.fillText(windText, width - padding, height - padding - (fontSize * 1.2));
 
         // Observer "Watermark" top center or corner
         ctx.font = `bold ${fontSize * 0.8}px sans-serif`;
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.textAlign = 'right';
-        ctx.fillText("OBSERVER EVIDENCE", width - padding, padding + fontSize);
+        ctx.fillText("EVIDÊNCIA OBSERVER", width - padding, padding + fontSize);
 
         canvas.toBlob((blob) => {
           if (blob) {
@@ -378,7 +378,10 @@ const CreateObservation = () => {
         title: title || `${category} em ${area}`,
         description: description,
         image: publicUrl,
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + 'Z',
+        timestamp: (() => {
+          const d = new Date();
+          return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}Z`;
+        })(),
         likes: 0,
         comments: []
       };
@@ -431,7 +434,7 @@ const CreateObservation = () => {
 
           {/* Smart Overlay UI - What you see is what you get (roughly) */}
           <div className="absolute top-4 right-4 text-right z-10 opacity-70">
-            <div className="text-white font-bold text-xs">OBSERVER EVIDENCE</div>
+            <div className="text-white font-bold text-xs">EVIDÊNCIA OBSERVER</div>
           </div>
 
           <div className="absolute bottom-20 left-4 right-4 z-10 pointer-events-none">
@@ -442,7 +445,7 @@ const CreateObservation = () => {
               </div>
               <div className="flex flex-col items-end">
                 <div className={`font-bold font-mono text-xl drop-shadow-md ${weather?.flight_category === 'VFR' ? 'text-green-400' : weather?.flight_category === 'IFR' ? 'text-red-400' : 'text-white'}`}>
-                  {weather ? `WIND: ${weather.wind}` : 'FETCHING...'}
+                  {weather ? `VENTO: ${weather.wind}` : 'BUSCANDO...'}
                 </div>
               </div>
             </div>
