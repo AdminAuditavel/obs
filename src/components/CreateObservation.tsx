@@ -4,6 +4,7 @@ import { useApp, Airport } from '../AppContext';
 import { IMAGES } from '../constants';
 import { supabase } from '../supabaseClient';
 import imageCompression from 'browser-image-compression';
+import { getWeather } from '../services/weatherService';
 
 const CreateObservation = () => {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ const CreateObservation = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Time State
+  // Time State
   const [timeZ, setTimeZ] = useState("");
 
   useEffect(() => {
@@ -80,37 +82,33 @@ const CreateObservation = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Sync with global if not editing (or if we want to allow override)
-  // If editing, maybe we want to keep the post's airport?
-  // Or just let it default to current global. 
-  // For now, simpler to align with global context or ignore mismatched airport.
-  useEffect(() => {
-    if (!isEditing) {
-      setLocalAirport(globalAirport);
-    }
-  }, [globalAirport, isEditing]);
+  // Weather State
+  const [weather, setWeather] = useState<{ wind: string; flight_category: string } | null>(null);
 
-  // Debounce search for changing airport
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length > 1) {
-        setIsSearching(true);
-        const { data, error } = await supabase
-          .from('airports')
-          .select('*')
-          .or(`icao.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`)
-          .limit(5);
-
-        if (!error && data) {
-          setSearchResults(data);
+    let mounted = true;
+    const fetchWeather = async () => {
+      if (localAirport?.icao) {
+        try {
+          // Import dynamically or if imported at top, just usage:
+          const data = await getWeather(localAirport.icao);
+          if (mounted && data) {
+            const wind = data.wind_dir_degrees !== undefined && data.wind_speed_kt !== undefined
+              ? `${data.wind_dir_degrees.toString().padStart(3, '0')}@${data.wind_speed_kt}KT`
+              : 'N/A';
+            setWeather({
+              wind,
+              flight_category: data.flight_category || 'N/A'
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch weather for overlay", err);
         }
-        setIsSearching(false);
-      } else {
-        setSearchResults([]);
       }
-    }, 300);
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+    };
+    fetchWeather();
+    return () => { mounted = false; };
+  }, [localAirport]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -125,9 +123,97 @@ const CreateObservation = () => {
     fileInputRef.current?.click();
   };
 
-  // ... imports remain the same
-  // Removed duplicate block
-  // ... existing hooks
+  // Canvas Overlay Function
+  const addOverlayToImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+
+        // Resize behavior: limit max dimension to 1920 to save memory/time, 
+        // similar to what compression would do, but we do it here for drawing.
+        const maxDim = 1920;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw Image
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // --- DRAW OVERLAY ---
+        // Gradient for readability at bottom
+        const grad = ctx.createLinearGradient(0, height - (height * 0.3), 0, height);
+        grad.addColorStop(0, 'transparent');
+        grad.addColorStop(1, 'rgba(0,0,0,0.8)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, height - (height * 0.3), width, height * 0.3);
+
+        // Text Settings
+        const fontSize = Math.floor(height * 0.04); // Responsive font size
+        const padding = Math.floor(height * 0.03);
+
+        ctx.font = `bold ${fontSize}px 'Courier New', monospace`; // Monospace for technical look
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textBaseline = 'bottom';
+
+        // Left Info: Airport + Time
+        const dateStr = new Date().toLocaleDateString('pt-BR');
+        const leftLine1 = `${localAirport.icao} • ${timeZ}`;
+        const leftLine2 = dateStr;
+
+        ctx.textAlign = 'left';
+        ctx.fillText(leftLine1, padding, height - padding - (fontSize * 1.2));
+        ctx.font = `${fontSize * 0.8}px 'Courier New', monospace`;
+        ctx.fillStyle = '#CCCCCC';
+        ctx.fillText(leftLine2, padding, height - padding);
+
+        // Right Info: Weather
+        ctx.textAlign = 'right';
+        ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+        ctx.fillStyle = weather?.flight_category === 'VFR' ? '#4ade80' :
+          weather?.flight_category === 'IFR' ? '#f87171' : '#FFFFFF';
+
+        const windText = weather ? `WIND: ${weather.wind}` : '';
+        ctx.fillText(windText, width - padding, height - padding - (fontSize * 1.2));
+
+        // Observer "Watermark" top center or corner
+        ctx.font = `bold ${fontSize * 0.8}px sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.textAlign = 'right';
+        ctx.fillText("OBSERVER EVIDENCE", width - padding, padding + fontSize);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const newFile = new File([blob], file.name, { type: 'image/jpeg' });
+            resolve(newFile);
+          } else {
+            reject(new Error("Canvas to Blob failed"));
+          }
+        }, 'image/jpeg', 0.90);
+      };
+      img.onerror = (e) => reject(e);
+      img.src = objectUrl;
+    });
+  };
 
   const handleSend = async () => {
     if (!description) {
@@ -147,12 +233,21 @@ const CreateObservation = () => {
 
       // 1. Upload Image logic
       if (photoFile) {
-        // Validation: Max 5MB
-        if (photoFile.size > 5 * 1024 * 1024) {
-          throw new Error("A imagem deve ter no máximo 5MB.");
+        // Validation: Max 10MB (allow larger initial, we compress)
+        if (photoFile.size > 10 * 1024 * 1024) {
+          throw new Error("A imagem deve ter no máximo 10MB.");
         }
 
-        // Compression & EXIF Removal
+        // *** APPLY SMART OVERLAY ***
+        // We burn the data into the image BEFORE compression to ensure it's legible
+        let proccessedFile = photoFile;
+        try {
+          proccessedFile = await addOverlayToImage(photoFile);
+        } catch (overlayErr) {
+          console.warn("Could not apply overlay, using original", overlayErr);
+        }
+
+        // Compression 
         const options = {
           maxSizeMB: 1, // Compress to ~1MB
           maxWidthOrHeight: 1920,
@@ -160,14 +255,14 @@ const CreateObservation = () => {
           initialQuality: 0.8,
         };
 
-        let compressedFile = photoFile;
+        let compressedFile = proccessedFile;
         try {
-          compressedFile = await imageCompression(photoFile, options);
+          compressedFile = await imageCompression(proccessedFile, options);
         } catch (cErr) {
-          console.warn("Compression failed, using original", cErr);
+          console.warn("Compression failed, using processed", cErr);
         }
 
-        const fileExt = compressedFile.name.split('.').pop() || 'jpg';
+        const fileExt = 'jpg'; // We converted to jpeg in canvas
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
 
@@ -189,14 +284,11 @@ const CreateObservation = () => {
         const { error: updateError } = await supabase
           .from('posts')
           .update({
-            // Author doesn't change
-            airport_id: localAirport.id, // Allow updating airport?
+            airport_id: localAirport.id,
             area: area,
             category: category,
             title: title || `${category} em ${area}`,
             description: description,
-            // Status remains same? Or revert to pending? 
-            // Stick to existing status or published.
           })
           .eq('id', editingPost.id);
 
@@ -205,8 +297,6 @@ const CreateObservation = () => {
 
         // Update Media if new file
         if (imagePath) {
-          // Delete old? optional.
-          // Insert new media record
           const { error: mediaError } = await supabase
             .from('post_media')
             .insert({
@@ -228,13 +318,14 @@ const CreateObservation = () => {
             category: category,
             title: title || `${category} em ${area}`,
             description: description,
-            status: 'published' // Default status
+            status: 'published'
           })
-          .select() // Return the inserted data
+          .select()
           .single();
 
         if (insertError) throw insertError;
         if (!postData) throw new Error("No data returned from post insert");
+
         resultId = postData.id;
 
         // 3. Insert Media (if exists)
@@ -316,6 +407,25 @@ const CreateObservation = () => {
         <div className="relative aspect-[4/3] bg-black overflow-hidden group">
           <img className="w-full h-full object-cover opacity-90" src={previewUrl} alt="Camera View" />
 
+          {/* Smart Overlay UI - What you see is what you get (roughly) */}
+          <div className="absolute top-4 right-4 text-right z-10 opacity-70">
+            <div className="text-white font-bold text-xs">OBSERVER EVIDENCE</div>
+          </div>
+
+          <div className="absolute bottom-20 left-4 right-4 z-10 pointer-events-none">
+            <div className="flex justify-between items-end">
+              <div className="flex flex-col">
+                <span className="text-white font-bold font-mono text-xl drop-shadow-md">{localAirport.icao} • {timeZ}</span>
+                <span className="text-slate-300 font-mono text-sm drop-shadow-md">{new Date().toLocaleDateString('pt-BR')}</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <div className={`font-bold font-mono text-xl drop-shadow-md ${weather?.flight_category === 'VFR' ? 'text-green-400' : weather?.flight_category === 'IFR' ? 'text-red-400' : 'text-white'}`}>
+                  {weather ? `WIND: ${weather.wind}` : 'FETCHING...'}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <input
             type="file"
             accept="image/*"
@@ -325,7 +435,7 @@ const CreateObservation = () => {
             className="hidden"
           />
 
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 pt-12">
             <div className="flex items-center justify-center gap-8">
               <button
                 onClick={handleTriggerCamera}

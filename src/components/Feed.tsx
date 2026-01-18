@@ -134,7 +134,31 @@ const Feed = () => {
   // Time Filter State
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
+  // helper for decay
+  const getPostAgeStatus = (createdAt: string) => {
+    // If no createdAt (e.g. legacy mocks), fallback to safe default
+    if (!createdAt) return 'old';
+
+    // Fix: Ensure we handle potential timezone offsets if string is UTC but Date.now is local? 
+    // ISO string is usually handled correctly by new Date().
+    const createdTime = new Date(createdAt).getTime();
+    const diff = Date.now() - createdTime;
+    const minutes = diff / 60000;
+
+    if (minutes < 30) return 'fresh'; // Green
+    if (minutes < 120) return 'aging'; // Yellow
+    return 'old'; // Gray (< 6h)
+  };
+
   const filteredPosts = posts.filter((post: any) => {
+    // 0. Filter Expired (Visual Decay - Focus on NOW)
+    // Filter out posts older than 6 hours automatically
+    if (post.createdAt) {
+      const diff = Date.now() - new Date(post.createdAt).getTime();
+      const hours = diff / (1000 * 60 * 60);
+      if (hours > 6) return false;
+    }
+
     // 1. Filter by Type
     if (!selectedTypes.includes(post.type)) return false;
     // 2. Filter by Category (if any selected)
@@ -311,6 +335,7 @@ const Feed = () => {
               <PostCard
                 key={post.id}
                 post={post}
+                status={getPostAgeStatus(post.createdAt)}
                 onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')}
                 onLikeToggle={() => toggleLike(post.id)}
               />
@@ -318,7 +343,7 @@ const Feed = () => {
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center text-gray-500">
               <span className="material-symbols-outlined !text-[48px] mb-2 opacity-50">search_off</span>
-              <p>Nenhum post encontrado com os filtros atuais.</p>
+              <p>Nenhum post ativo encontrado.<br />Mostrando apenas últimas 6 horas.</p>
               <button onClick={() => { setSelectedTypes(['official', 'collaborative', 'staff']); setSelectedCategories([]); }} className="text-primary text-sm font-bold mt-2">
                 Limpar Filtros
               </button>
@@ -541,9 +566,25 @@ const TimeMarker = ({ time, height, opacity, active }: any) => (
   </div>
 );
 
-const PostCard = ({ post, onClick, onLikeToggle }: any) => {
+const PostCard = ({ post, onClick, onLikeToggle, status }: any) => {
   const isOfficial = post.type === 'official';
-  const cardBg = isOfficial ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50' : 'bg-white dark:bg-[#1a2233] border-gray-200 dark:border-gray-800';
+
+  // Style based on Visual Decay Status
+  let borderClass = 'border-gray-200 dark:border-gray-800';
+  let badge = null;
+
+  if (!isOfficial) {
+    if (status === 'fresh') { // < 30m
+      borderClass = 'border-green-400 shadow-md shadow-green-100 dark:shadow-none';
+      badge = <span className="absolute -top-2 right-2 px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-sm animate-pulse">AGORA</span>;
+    } else if (status === 'aging') { // < 2h
+      borderClass = 'border-yellow-400';
+    } else if (status === 'old') { // > 2h
+      borderClass = 'border-gray-200 dark:border-gray-800 opacity-60 grayscale-[50%]';
+    }
+  }
+
+  const cardBg = isOfficial ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50' : `bg-white dark:bg-[#1a2233] ${borderClass}`;
 
   const handleLikeClick = (e: any) => {
     e.stopPropagation();
@@ -553,7 +594,8 @@ const PostCard = ({ post, onClick, onLikeToggle }: any) => {
   };
 
   return (
-    <div onClick={onClick} className={`flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:bg-opacity-90 ${cardBg}`}>
+    <div onClick={onClick} className={`relative flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:bg-opacity-90 ${cardBg}`}>
+      {badge}
       <div className="flex items-start justify-between">
         <div className="flex gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden ${isOfficial ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-800'}`}>
@@ -592,17 +634,17 @@ const PostCard = ({ post, onClick, onLikeToggle }: any) => {
           )}
         </div>
         {post.image && (
-          <div className="w-24 h-24 shrink-0 bg-center bg-cover rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
-            style={{ backgroundImage: `url('${post.image}')` }}></div>
+          <div className="w-24 h-24 shrink-0 bg-center bg-cover rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 relative group overflow-hidden"
+            style={{ backgroundImage: `url('${post.image}')` }}>
+            {/* Evidence Watermark icon */}
+            <div className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5">
+              <span className="material-symbols-outlined text-white !text-[10px]">fingerprint</span>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 };
-
-
-
-
-
 
 export default Feed;

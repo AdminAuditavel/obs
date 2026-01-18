@@ -30,6 +30,7 @@ export const INITIAL_POSTS: Post[] = [
     description: 'Novo terminal aerodrome forecast emitido. Mudança de vento prevista para as 15:00Z.',
     image: IMAGES.radar,
     timestamp: '5m ago',
+    createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
     likes: 0,
     comments: []
   },
@@ -42,6 +43,7 @@ export const INITIAL_POSTS: Post[] = [
     description: 'Visible patches of ground fog near the threshold. Visibility reducing rapidly.',
     image: IMAGES.fogRunway,
     timestamp: '12m ago',
+    createdAt: new Date(Date.now() - 12 * 60000).toISOString(),
     likes: 14,
     comments: [
       { id: 'c1', user: { id: 'u3', name: 'PT-JFG', avatar: IMAGES.commenter }, text: 'Confirmo, acabei de arremeter por conta do teto baixo.', timestamp: 'Há 5 min' }
@@ -55,6 +57,7 @@ export const INITIAL_POSTS: Post[] = [
     title: 'Wildlife activity near Taxiway Foxtrot',
     description: 'Small group of birds spotted near Bravo-Foxtrot intersection. Operations aware.',
     timestamp: '25m ago',
+    createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
     likes: 0,
     comments: []
   }

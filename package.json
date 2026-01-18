@@ -28,6 +28,7 @@
     "@types/node-fetch": "^2.6.13",
     "@types/pg": "^8.16.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "supabase": "^2.72.8",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

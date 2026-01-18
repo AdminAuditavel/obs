@@ -24,6 +24,7 @@ export interface Post {
   description: string;
   image?: string;
   timestamp: string;
+  createdAt: string;
   likes: number;
   likedByMe?: boolean;
   confirmedByMe?: boolean;

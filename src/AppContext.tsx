@@ -252,6 +252,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             description: p.description,
             image: imageUrl,
             timestamp: new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + 'Z',
+            createdAt: p.created_at,
             likes: p.likes?.[0]?.count || 0,
             likedByMe: myLikedMap.has(p.id),
             confirmedByMe: myConfMap.has(p.id),
