@@ -53,6 +53,7 @@ const Feed = () => {
   // Time State
   const [timeZ, setTimeZ] = useState("");
   const [metar, setMetar] = useState<string | null>(null);
+  const [flightCategory, setFlightCategory] = useState<string | null>(null);
   const [isLoadingMetar, setIsLoadingMetar] = useState(false);
 
   useEffect(() => {
@@ -74,11 +75,13 @@ const Feed = () => {
 
       setIsLoadingMetar(true);
       setMetar(null); // Reset while loading
+      setFlightCategory(null);
 
       try {
         const data = await getWeather(selectedAirport.icao);
         if (data && data.raw) {
           setMetar(data.raw);
+          setFlightCategory(data.flight_category || null);
         } else {
           setMetar("METAR não disponível no momento.");
         }
@@ -282,10 +285,11 @@ const Feed = () => {
             <div className="p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                  <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
                   <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
                 </div>
-                <p className="text-primary text-sm font-mono font-bold">{timeZ}</p>
+                {/* <p className="text-primary text-sm font-mono font-bold">{timeZ}</p> */}
+                <FlightCategoryBadge category={flightCategory} />
               </div>
 
               <div className="flex gap-2 flex-wrap">
@@ -604,6 +608,34 @@ const TimeMarker = ({ time, height, opacity, active }: any) => (
     <p className={`text-[10px] font-mono ${active ? 'font-bold text-blue-600 dark:text-blue-400' : ''}`}>{time}</p>
   </div>
 );
+
+const FlightCategoryBadge = ({ category }: { category: string | null }) => {
+  if (!category) return null;
+
+  const config: any = {
+    'VFR': { color: 'green', icon: 'sunny', label: 'VFR' },
+    'MVFR': { color: 'blue', icon: 'partly_cloudy_day', label: 'MVFR' },
+    'IFR': { color: 'red', icon: 'cloud', label: 'IFR' },
+    'LIFR': { color: 'purple', icon: 'foggy', label: 'LIFR' },
+  };
+
+  const c = config[category] || { color: 'gray', icon: 'help', label: category };
+
+  const styleMap: any = {
+    green: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+    blue: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+    red: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+    purple: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
+    gray: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
+  }
+
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border shadow-sm ${styleMap[c.color]}`}>
+      <span className="material-symbols-outlined !text-[16px]">{c.icon}</span>
+      <span className="text-[11px] font-bold">{c.label}</span>
+    </div>
+  )
+}
 
 const PostCard = ({ post, onClick, onLikeToggle, status }: any) => {
   // Note: we can't easily access getPostAgeStatus here without prop or context, 
