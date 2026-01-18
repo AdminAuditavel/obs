@@ -13,7 +13,7 @@ const Feed = () => {
   const [searchResults, setSearchResults] = useState<Airport[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
 
   // Filter States
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -87,7 +87,7 @@ const Feed = () => {
 
   const handleSelectAirport = (airport: Airport) => {
     setSelectedAirport(airport);
-    setIsSearchOpen(false);
+
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -138,33 +138,80 @@ const Feed = () => {
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
       {/* TopAppBar */}
-      <header className="sticky top-0 z-30 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white overflow-hidden p-0.5">
-            <img src="/app-logo.png" alt="Logo" className="h-full w-full object-contain" />
+      <header className="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 py-2 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1200px] mx-auto w-full flex items-center gap-4">
+
+          {/* Left: Logo & Airport Info */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white overflow-hidden p-0.5 shadow-sm border border-gray-100">
+              <img src="/app-logo.png" alt="Logo" className="h-full w-full object-contain" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold leading-tight tracking-tight text-[#0c121d] dark:text-white">{selectedAirport.icao}</h1>
+              <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 max-w-[100px] truncate hidden sm:block">{selectedAirport.city}</p>
+            </div>
           </div>
-          <div>
+
+          {/* Center: Persistent Search Bar */}
+          <div className={`relative flex-1 max-w-[600px] flex items-center h-11 rounded-full bg-white dark:bg-[#1a2233] shadow-sm border border-gray-200 dark:border-gray-700 px-4 transition-all focus-within:shadow-md focus-within:border-blue-500/50 ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0' : ''}`}>
+            <span className="material-symbols-outlined text-gray-400 text-[20px]">search</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar ICAO..."
+              className="flex-1 bg-transparent border-none outline-none text-sm text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full px-2"
+            />
+
             <div className="flex items-center gap-1">
-              <h1 className="text-lg font-bold leading-tight tracking-tight">{selectedAirport.icao} - {selectedAirport.city}</h1>
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <span className="material-symbols-outlined !text-[16px]">close</span>
+                </button>
+              )}
               <button
-                onClick={() => toggleFavorite(selectedAirport)}
-                className={`p-1 transition-colors ${isFavorited ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500'}`}
+                onClick={startListening}
+                className={`p-1.5 rounded-full transition-all ${isListening
+                  ? 'bg-red-100 text-red-500 animate-pulse'
+                  : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                title="Pesquisa por voz"
               >
-                <span className={`material-symbols-outlined !text-[20px] ${isFavorited ? 'fill-1' : ''}`}>star</span>
+                <span className="material-symbols-outlined !text-[18px]">{isListening ? 'mic' : 'mic'}</span>
               </button>
             </div>
-            <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">{selectedAirport.name}</p>
-          </div>
-        </div>
 
-        {/* Search Bar - Right Aligned */}
-        {/* Search Trigger */}
-        <div className="flex items-center justify-end">
+            {/* Dropdown Results */}
+            {searchResults.length > 0 && (
+              <div className="absolute top-11 left-0 right-0 bg-white dark:bg-[#1a2233] rounded-b-2xl shadow-xl border border-gray-200 dark:border-gray-700 border-t-0 overflow-hidden max-h-[60vh] overflow-y-auto z-50">
+                <div className="h-[1px] bg-gray-100 dark:bg-gray-800 mx-4 mb-1"></div>
+                {searchResults.map((airport: any) => (
+                  <button
+                    key={airport.id}
+                    onClick={() => handleSelectAirport(airport)}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-7 w-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined !text-[16px]">flight_takeoff</span>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-bold text-[#0c121d] dark:text-white block text-xs truncate">{airport.icao}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate block">{airport.city}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                <div className="h-2"></div>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Star */}
           <button
-            onClick={() => setIsSearchOpen(true)}
-            className="p-2 text-gray-500 hover:text-primary transition-colors flex items-center justify-center rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+            onClick={() => toggleFavorite(selectedAirport)}
+            className={`p-2 shrink-0 rounded-full transition-colors ${isFavorited ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
           >
-            <span className="material-symbols-outlined !text-[24px]">search</span>
+            <span className={`material-symbols-outlined !text-[24px] ${isFavorited ? 'fill-1' : ''}`}>star</span>
           </button>
         </div>
       </header>
@@ -406,16 +453,7 @@ const Feed = () => {
       )}
 
       {/* Search Modal */}
-      <SearchModal
-        isOpen={isSearchOpen}
-        onClose={() => { setIsSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        searchResults={searchResults}
-        handleSelectAirport={handleSelectAirport}
-        startListening={startListening}
-        isListening={isListening}
-      />
+
     </div>
   );
 };
@@ -525,77 +563,6 @@ const PostCard = ({ post, onClick, onLikeToggle }: any) => {
 
 
 
-function SearchModal({ isOpen, onClose, searchQuery, setSearchQuery, searchResults, handleSelectAirport, startListening, isListening }: any) {
-  if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 pt-20 px-4" onClick={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}>
-      <div className="w-full max-w-[600px] relative flex flex-col gap-2 animate-in slide-in-from-top-4 duration-300">
-
-        {/* Search Bar - Google Style */}
-        <div className={`relative flex items-center w-full h-14 rounded-full bg-white dark:bg-[#1a2233] shadow-2xl border border-gray-200 dark:border-gray-700 px-5 transition-shadow hover:shadow-3xl ${searchResults.length > 0 ? 'rounded-b-none rounded-t-3xl border-b-0' : ''}`}>
-          <span className="material-symbols-outlined text-gray-400 text-[24px]">search</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Busque por ICAO, Cidade ou Aeroporto..."
-            className="flex-1 bg-transparent border-none outline-none text-lg text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full px-4"
-            autoFocus
-          />
-
-          <div className="flex items-center gap-2">
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                <span className="material-symbols-outlined !text-[24px]">close</span>
-              </button>
-            )}
-
-            <div className="h-6 w-[1px] bg-gray-300 dark:bg-gray-700 mx-1"></div>
-
-            <button
-              onClick={startListening}
-              className={`p-2 rounded-full transition-all ${isListening
-                ? 'bg-red-100 text-red-500 animate-pulse'
-                : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
-              title="Pesquisa por voz"
-            >
-              <span className="material-symbols-outlined !text-[24px]">{isListening ? 'mic' : 'mic'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Results Dropdown */}
-        {searchResults.length > 0 && (
-          <div className="absolute top-14 left-0 right-0 bg-white dark:bg-[#1a2233] rounded-b-3xl shadow-2xl border border-gray-200 dark:border-gray-700 border-t-0 overflow-hidden max-h-[60vh] overflow-y-auto">
-            <div className="h-[1px] bg-gray-100 dark:bg-gray-800 mx-4 mb-2"></div>
-            {searchResults.map((airport: any) => (
-              <button
-                key={airport.id}
-                onClick={() => handleSelectAirport(airport)}
-                className="w-full text-left px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
-                    <span className="material-symbols-outlined !text-[20px]">flight_takeoff</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#0c121d] dark:text-white block text-sm">{airport.icao}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{airport.city}</span>
-                  </div>
-                </div>
-                <span className="text-[10px] text-gray-400 max-w-[120px] truncate ml-2 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{airport.name}</span>
-              </button>
-            ))}
-            <div className="h-4"></div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-};
 
 export default Feed;
