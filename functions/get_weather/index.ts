@@ -37,9 +37,12 @@ serve(async (req) => {
                 // Or sometimes just empty if no data.
                 if (text && text.length > 20 && !text.includes("Mensagem nao encontrada")) {
                     // Extract the part that looks like a METAR
-                    // Usually it sends date YYYYMMDDHHMM first.
-                    // Let's clean it up.
-                    const cleanRaw = text.trim();
+                    // REDEMET sends "YYYYMMDDHH - METAR ...". We want to strip the prefix.
+                    let cleanRaw = text.trim();
+                    const match = cleanRaw.match(/(METAR|SPECI) [\s\S]*/);
+                    if (match) {
+                        cleanRaw = match[0];
+                    }
                     
                     // Construct a response object compatible with what we expect
                     const result = [{
