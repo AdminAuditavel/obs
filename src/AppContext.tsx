@@ -136,7 +136,6 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             full_name,
             avatar_url,
             role_id,
-            job_title,
             callsign
           ),
           media:post_media (
