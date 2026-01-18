@@ -659,30 +659,26 @@ const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
 }
 
 const WeatherBadgeSmall = ({ icon, label, value, color = 'blue' }: any) => {
-  const colorStyles: any = {
-    'blue': 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 text-blue-900 dark:text-blue-100',
-    'yellow': 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/30 text-yellow-900 dark:text-yellow-100',
-    'red': 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30 text-red-900 dark:text-red-100',
-    'red-dark': 'bg-red-700 text-white border-red-800' // High contrast for critical
+  // Container always neutral
+  const containerStyle = "bg-gray-50 dark:bg-gray-800/40 border-gray-100 dark:border-gray-800";
+
+  // Text/Icon colors
+  const textColors: any = {
+    'blue': 'text-blue-600 dark:text-blue-400',
+    'yellow': 'text-amber-600 dark:text-amber-400',
+    'red': 'text-red-500 dark:text-red-400',
+    'red-dark': 'text-red-700 dark:text-red-500' // Darker red for critical
   };
 
-  // Icon colors matching text except for red-dark where white is needed
-  const iconColor = color === 'red-dark' ? 'text-white' : 'text-primary';
-  // Actually standard primary is blue, maybe we want icon to match theme?
-  // Let's keep it simple: specific color overrides text, icon usually follows or is distinct.
-
-  // Adjusting inner label colors based on background
-  const labelColor = color === 'red-dark' ? 'text-red-100' : 'text-gray-400 dark:text-gray-500';
-  const valueColor = color === 'red-dark' ? 'text-white' : 'text-gray-800 dark:text-gray-200';
-  const activeIconColor = color === 'red-dark' ? 'text-white' : (color === 'yellow' ? 'text-yellow-600' : (color === 'red' ? 'text-red-600' : 'text-blue-600'));
+  const activeColor = textColors[color] || textColors.blue;
 
   return (
-    <div className={`flex flex-col p-2.5 rounded-lg border transition-colors ${colorStyles[color] || colorStyles.blue}`}>
+    <div className={`flex flex-col p-2.5 rounded-lg border ${containerStyle}`}>
       <div className="flex items-center gap-1.5 mb-0.5">
-        <span className={`material-symbols-outlined !text-[14px] ${activeIconColor}`}>{icon}</span>
-        <span className={`text-[10px] uppercase font-bold ${labelColor}`}>{label}</span>
+        <span className={`material-symbols-outlined !text-[14px] ${activeColor}`}>{icon}</span>
+        <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500">{label}</span>
       </div>
-      <span className={`text-xs font-bold truncate ${valueColor}`}>{value}</span>
+      <span className={`text-xs font-bold truncate ${activeColor}`}>{value}</span>
     </div>
   );
 };
