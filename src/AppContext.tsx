@@ -57,8 +57,18 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [invites, setInvites] = useState<Invite[]>(INITIAL_INVITES);
   const [reports, setReports] = useState<ReportItem[]>(INITIAL_REPORTS);
-  const [selectedAirport, setSelectedAirport] = useState<Airport>(DEFAULT_AIRPORT);
+  const [selectedAirport, setSelectedAirport] = useState<Airport>(() => {
+    // Persist selection
+    const stored = localStorage.getItem('selected_airport');
+    return stored ? JSON.parse(stored) : DEFAULT_AIRPORT;
+  });
   const [favoriteAirports, setFavoriteAirports] = useState<Airport[]>([]);
+
+  useEffect(() => {
+    if (selectedAirport) {
+      localStorage.setItem('selected_airport', JSON.stringify(selectedAirport));
+    }
+  }, [selectedAirport]);
 
   useEffect(() => {
     // Check active session
