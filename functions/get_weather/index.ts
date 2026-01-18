@@ -21,6 +21,45 @@ serve(async (req) => {
       });
     }
 
+    // Check if it's a Brazilian airport
+    const isBrazilian = /^(S[BUSDIJW]|SW)/.test(icao.toUpperCase());
+
+    if (isBrazilian) {
+        try {
+            // REDEMET API
+            const redemetUrl = `https://redemet.decea.gov.br/api/consulta_automatica/index.php?local=${icao}&msg=metar`;
+            console.log(`Fetching from REDEMET for ${icao}: ${redemetUrl}`);
+            const redResponse = await fetch(redemetUrl);
+            
+            if (redResponse.ok) {
+                const text = await redResponse.text();
+                // REDEMET often returns raw text like: "202401181400 METAR SBGR 181400Z ...="
+                // Or sometimes just empty if no data.
+                if (text && text.length > 20 && !text.includes("Mensagem nao encontrada")) {
+                    // Extract the part that looks like a METAR
+                    // Usually it sends date YYYYMMDDHHMM first.
+                    // Let's clean it up.
+                    const cleanRaw = text.trim();
+                    
+                    // Construct a response object compatible with what we expect
+                    const result = [{
+                        rawOb: cleanRaw,
+                        station_id: icao,
+                        observation_time: new Date().toISOString(), // REDEMET doesn't give ISO time easily, using current as approx or parsing from text if critical.
+                        // For display purposes, the raw text contains the Z time, which pilots read.
+                    }];
+
+                    return new Response(JSON.stringify(result), {
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn("REDEMET fetch failed, falling back to global source.", err);
+        }
+    }
+
+    // Fallback or Global Source (AviationWeather)
     // hours=96 (4 days) to capture last report for non-24h airports (e.g. closed weekend)
     const apiUrl = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json&hours=96&taf=false`;
     console.log(`Fetching METAR for ${icao} from ${apiUrl}`);
