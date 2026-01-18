@@ -104,10 +104,11 @@ const Register = () => {
                             onChange={(e) => setJobTitle(e.target.value)}
                         >
                             <option value="registered">Entusiasta / Spotter</option>
-                            <option value="pilot">Piloto</option>
-                            <option value="mech">Mecânico</option>
-                            <option value="atc">Controlador (ATC)</option>
                             <option value="ground">Equipe de Solo</option>
+                            <option value="mech">Mecânico</option>
+                            <option value="met">Meteorologia (PMET, OEA)</option>
+                            <option value="atc">Navegação Aérea (ATC, OEA, AIS)</option>
+                            <option value="pilot">Piloto/Comandante</option>
                             <option value="staff">Staff / Admin</option>
                         </select>
                     </div>

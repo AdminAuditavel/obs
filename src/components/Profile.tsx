@@ -5,6 +5,7 @@ import { IMAGES } from '../constants';
 
 import { supabase } from '../supabaseClient';
 import AvatarUpload from './AvatarUpload';
+import { UserBadge } from './UserBadge';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -164,17 +165,17 @@ const Profile = () => {
                       value={editJobTitle}
                       onChange={e => setEditJobTitle(e.target.value)}
                     >
-                      <option value="registered">Entusiasta</option>
-                      <option value="pilot">Piloto</option>
+                      <option value="registered">Entusiasta / Spotter</option>
+                      <option value="ground">Equipe de Solo</option>
                       <option value="mech">Mecânico</option>
-                      <option value="atc">ATC</option>
-                      <option value="ground">Solo</option>
-                      <option value="staff">Staff</option>
+                      <option value="met">Meteorologia (PMET, OEA)</option>
+                      <option value="atc">Navegação Aérea (ATC, OEA, AIS)</option>
+                      <option value="pilot">Piloto/Comandante</option>
+                      <option value="staff">Staff / Admin</option>
                     </select>
                   ) : (
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-slate-400 text-sm">badge</span>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm font-normal leading-normal text-center uppercase">{user.job_title || 'Registrado'}</p>
+                    <div className="flex items-center justify-center mt-1">
+                      <UserBadge job_title={user.job_title} className="text-sm px-2 py-1" />
                     </div>
                   )}
                 </div>
