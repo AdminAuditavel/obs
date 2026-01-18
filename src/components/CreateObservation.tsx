@@ -115,11 +115,15 @@ const CreateObservation = () => {
           // Import dynamically or if imported at top, just usage:
           const data = await getWeather(localAirport.icao);
           if (mounted && data) {
-            const wind = data.wind_dir_degrees !== undefined && data.wind_speed_kt !== undefined
+            // Only show wind if valid (not undefined)
+            const wind = (data.wind_dir_degrees !== undefined && data.wind_speed_kt !== undefined)
               ? `${data.wind_dir_degrees.toString().padStart(3, '0')}@${data.wind_speed_kt}KT`
-              : 'N/A';
+              : null; // Changed to null to indicate no data
+
+            // If string is constructed but effectively "NaN@NaNKT" or similar logic could go here depending on API
+
             setWeather({
-              wind,
+              wind: wind || '', // Pass empty string if null, handle in UI
               flight_category: data.flight_category || 'N/A'
             });
           }
@@ -248,8 +252,10 @@ const CreateObservation = () => {
         ctx.fillStyle = weather?.flight_category === 'VFR' ? '#4ade80' :
           weather?.flight_category === 'IFR' ? '#f87171' : '#FFFFFF';
 
-        const windText = weather ? `VENTO: ${weather.wind}` : '';
-        ctx.fillText(windText, width - padding, height - padding - (fontSize * 1.2));
+        if (weather && weather.wind) {
+          const windText = `VENTO: ${weather.wind}`;
+          ctx.fillText(windText, width - padding, height - padding - (fontSize * 1.2));
+        }
 
         // Observer "Watermark" top center or corner
         ctx.font = `bold ${fontSize * 0.8}px sans-serif`;
@@ -479,9 +485,11 @@ const CreateObservation = () => {
                 <span className="text-slate-300 font-mono text-sm drop-shadow-md">{new Date().toLocaleDateString('pt-BR')}</span>
               </div>
               <div className="flex flex-col items-end">
-                <div className={`font-bold font-mono text-xl drop-shadow-md ${weather?.flight_category === 'VFR' ? 'text-green-400' : weather?.flight_category === 'IFR' ? 'text-red-400' : 'text-white'}`}>
-                  {weather ? `VENTO: ${weather.wind}` : 'BUSCANDO...'}
-                </div>
+                {weather?.wind && (
+                  <div className={`font-bold font-mono text-xl drop-shadow-md ${weather?.flight_category === 'VFR' ? 'text-green-400' : weather?.flight_category === 'IFR' ? 'text-red-400' : 'text-white'}`}>
+                    VENTO: {weather.wind}
+                  </div>
+                )}
               </div>
             </div>
           </div>
