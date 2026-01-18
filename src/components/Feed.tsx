@@ -567,19 +567,30 @@ const TimeMarker = ({ time, height, opacity, active }: any) => (
 );
 
 const PostCard = ({ post, onClick, onLikeToggle, status }: any) => {
+  // Note: we can't easily access getPostAgeStatus here without prop or context, 
+  // but 'status' prop was passed in the parent map!
+  // Wait, I see I missed adding 'status' to the props destructuring in the definition line in previous view
+  // Let me fix the definition and use the status prop.
+  return <PostCardWithStatus post={post} onClick={onClick} onLikeToggle={onLikeToggle} status={status} />;
+};
+
+// Moving to proper component definition
+const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
   const isOfficial = post.type === 'official';
+  const { confirmPostValidity } = useApp(); // Access confirm action
+  const [confirming, setConfirming] = useState(false);
 
   // Style based on Visual Decay Status
   let borderClass = 'border-gray-200 dark:border-gray-800';
   let badge = null;
 
   if (!isOfficial) {
-    if (status === 'fresh') { // < 30m
+    if (status === 'fresh') {
       borderClass = 'border-green-400 shadow-md shadow-green-100 dark:shadow-none';
       badge = <span className="absolute -top-2 right-2 px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-sm animate-pulse">AGORA</span>;
-    } else if (status === 'aging') { // < 2h
+    } else if (status === 'aging') {
       borderClass = 'border-yellow-400';
-    } else if (status === 'old') { // > 2h
+    } else if (status === 'old') {
       borderClass = 'border-gray-200 dark:border-gray-800 opacity-60 grayscale-[50%]';
     }
   }
@@ -593,10 +604,41 @@ const PostCard = ({ post, onClick, onLikeToggle, status }: any) => {
     }
   };
 
+  const handleQuickConfirm = async (e: any) => {
+    e.stopPropagation();
+    setConfirming(true);
+    try {
+      await confirmPostValidity(post.id);
+      // We rely on realtime or parent refresh, but for UI feedback we can just show success state locally if needed
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   return (
     <div onClick={onClick} className={`relative flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:bg-opacity-90 ${cardBg}`}>
       {badge}
-      <div className="flex items-start justify-between">
+
+      {/* Visual Decay "Still Relevant?" Prompt */}
+      {!isOfficial && status === 'aging' && !post.confirmedByMe && (
+        <div className="absolute -top-3 left-4 right-4 bg-yellow-100 dark:bg-yellow-900/80 border border-yellow-200 dark:border-yellow-700 rounded-lg p-2 shadow-sm z-10 flex items-center justify-between animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-yellow-700 dark:text-yellow-400 !text-[16px]">help</span>
+            <span className="text-xs font-bold text-yellow-800 dark:text-yellow-100">Ainda relevante?</span>
+          </div>
+          <button
+            onClick={handleQuickConfirm}
+            disabled={confirming}
+            className="px-3 py-1 bg-white dark:bg-black/20 rounded text-xs font-bold text-yellow-800 dark:text-yellow-100 shadow-sm border border-yellow-200 dark:border-yellow-700 hover:bg-yellow-50 active:scale-95 disabled:opacity-50"
+          >
+            {confirming ? '...' : 'Confirmar'}
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-start justify-between mt-2">
         <div className="flex gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden ${isOfficial ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-800'}`}>
             {isOfficial ? <span className="material-symbols-outlined text-amber-600 dark:text-amber-400">verified_user</span> : <img src={post.user?.avatar || IMAGES.profileMain} className="w-full h-full object-cover" alt="" />}
@@ -630,6 +672,12 @@ const PostCard = ({ post, onClick, onLikeToggle, status }: any) => {
                 <span className="material-symbols-outlined !text-[18px]">chat_bubble</span>
                 {post.comments ? post.comments.length : 0}
               </button>
+              {post.confirmedByMe && (
+                <span className="text-green-600 dark:text-green-400 text-xs font-bold flex items-center gap-1">
+                  <span className="material-symbols-outlined !text-[14px]">check_circle</span>
+                  Confirmado
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -646,5 +694,6 @@ const PostCard = ({ post, onClick, onLikeToggle, status }: any) => {
     </div>
   );
 };
+
 
 export default Feed;
