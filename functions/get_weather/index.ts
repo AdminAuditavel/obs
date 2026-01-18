@@ -33,6 +33,16 @@ serve(async (req) => {
 
     const data = await response.json();
 
+    // Ensure we send the latest report first (SPECI or METAR)
+    // AviationWeather API usually sorts, but we force it to be sure.
+    if (Array.isArray(data)) {
+        data.sort((a, b) => {
+            const timeA = new Date(a.reportTime || a.observation_time).getTime();
+            const timeB = new Date(b.reportTime || b.observation_time).getTime();
+            return timeB - timeA; // Descending
+        });
+    }
+
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
