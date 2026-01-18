@@ -6,6 +6,7 @@ import { parsePhoneticString } from '../utils/phonetic';
 import { supabase } from '../supabaseClient';
 import { Airport } from '../AppContext';
 import { getWeather } from '../services/weatherService';
+import { UserBadge } from './UserBadge';
 const Feed = () => {
   const navigate = useNavigate();
   const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike } = useApp();
@@ -646,7 +647,11 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
           <div className="flex flex-col">
             <div className="flex items-center gap-1">
               <p className="text-[#0c121d] dark:text-white text-sm font-bold">{post.user?.name || "Desconhecido"}</p>
-              {isOfficial && <span className="material-symbols-outlined text-blue-500 !text-[14px] fill-1">verified</span>}
+              {isOfficial ? (
+                <span className="material-symbols-outlined text-blue-500 !text-[14px] fill-1">verified</span>
+              ) : (
+                <UserBadge role={post.user?.role} />
+              )}
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-[11px]">{isOfficial ? 'Fonte Oficial' : (post.type === 'staff' ? 'Relato da Equipe' : 'Relato de Usuário')} • {post.timestamp}</p>
           </div>

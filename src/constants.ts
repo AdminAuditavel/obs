@@ -37,7 +37,7 @@ export const INITIAL_POSTS: Post[] = [
   {
     id: '2',
     type: 'collaborative',
-    user: { id: 'u1', name: 'PR-GUZ (Pilot)', avatar: IMAGES.pilotAvatar },
+    user: { id: 'u1', name: 'PR-GUZ (Pilot)', avatar: IMAGES.pilotAvatar, role: 'pilot' },
     category: 'Visibility',
     title: 'Fog forming on Rwy 15',
     description: 'Visible patches of ground fog near the threshold. Visibility reducing rapidly.',
@@ -46,13 +46,13 @@ export const INITIAL_POSTS: Post[] = [
     createdAt: new Date(Date.now() - 12 * 60000).toISOString(),
     likes: 14,
     comments: [
-      { id: 'c1', user: { id: 'u3', name: 'PT-JFG', avatar: IMAGES.commenter }, text: 'Confirmo, acabei de arremeter por conta do teto baixo.', timestamp: 'Há 5 min' }
+      { id: 'c1', user: { id: 'u3', name: 'PT-JFG', avatar: IMAGES.commenter, role: 'pilot' }, text: 'Confirmo, acabei de arremeter por conta do teto baixo.', timestamp: 'Há 5 min' }
     ]
   },
   {
     id: '3',
     type: 'staff',
-    user: { id: 'u2', name: 'Ground OBS (V. Silva)', avatar: IMAGES.groundStaffAvatar },
+    user: { id: 'u2', name: 'Ground OBS (V. Silva)', avatar: IMAGES.groundStaffAvatar, role: 'staff' },
     category: 'Security',
     title: 'Wildlife activity near Taxiway Foxtrot',
     description: 'Small group of birds spotted near Bravo-Foxtrot intersection. Operations aware.',
@@ -64,9 +64,9 @@ export const INITIAL_POSTS: Post[] = [
 ];
 
 export const INITIAL_INVITES: Invite[] = [
-  { id: '1', email: 'marcos.nunes@skyway.com', role: 'Contributor', status: 'active', expiresIn: '12h restantes', sender: 'Cmte. Gabriel' },
-  { id: '2', email: 'suporte.ground@tower.aero', role: 'Contributor', status: 'expired', expiresIn: 'Há 2 dias', sender: 'Cmte. Gabriel' },
-  { id: '3', email: 'lucas.ferreira@observer.app', role: 'Contributor', status: 'active', expiresIn: '29 dias restantes', sender: 'Admin' },
+  { id: '1', invited_email: 'marcos.nunes@skyway.com', role_id: 'contributor', uses_left: 1, max_uses: 1, expires_at: '2026-02-01', revoked: false, token_hash: 'hash1' },
+  { id: '2', invited_email: 'suporte.ground@tower.aero', role_id: 'contributor', uses_left: 0, max_uses: 1, expires_at: '2026-01-10', revoked: false, token_hash: 'hash2' },
+  { id: '3', invited_email: 'lucas.ferreira@observer.app', role_id: 'contributor', uses_left: 5, max_uses: 10, expires_at: '2026-03-01', revoked: false, token_hash: 'hash3' },
 ];
 
 export const INITIAL_REPORTS: ReportItem[] = [
