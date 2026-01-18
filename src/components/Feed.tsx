@@ -619,7 +619,7 @@ const FlightCategoryBadge = ({ category }: { category: string | null }) => {
     'LIFR': { color: 'purple', icon: 'foggy', label: 'LIFR' },
   };
 
-  const c = config[category] || { color: 'gray', icon: 'help', label: category };
+  const c = config[category] || { color: 'gray', icon: 'help', label: category === 'UNK' ? 'N/A' : category };
 
   const styleMap: any = {
     green: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
