@@ -36,20 +36,56 @@ serve(async (req) => {
                 // REDEMET often returns raw text like: "202401181400 METAR SBGR 181400Z ...="
                 // Or sometimes just empty if no data.
                 if (text && text.length > 20 && !text.includes("Mensagem nao encontrada")) {
-                    // Extract the part that looks like a METAR
-                    // REDEMET sends "YYYYMMDDHH - METAR ...". We want to strip the prefix.
-                    let cleanRaw = text.trim();
-                    const match = cleanRaw.match(/(METAR|SPECI) [\s\S]*/);
-                    if (match) {
-                        cleanRaw = match[0];
+                    // REDEMET can return multiple messages concatenated with '='
+                    // e.g. "METAR...= 2024... SPECI...="
+                    // We split by '=' to get individual reports
+                    const rawMessages = text.split('=').map(m => m.trim()).filter(m => m.length > 10);
+                    
+                    let latestMessage = "";
+                    let latestTimeVal = -1;
+
+                    for (const msg of rawMessages) {
+                        // Clean prefix if present: "2026011811 - METAR"
+                        let cleanMsg = msg;
+                        const matchType = msg.match(/(METAR|SPECI)[\s\S]*/);
+                        if (matchType) {
+                            cleanMsg = matchType[0];
+                        } 
+
+                        // Extract time Z: "181120Z" (DDHHMMZ)
+                        const timeMatch = cleanMsg.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+                        if (timeMatch) {
+                            // Convert to comparable minutes value (Day * 1440 + Hour * 60 + Min)
+                            // Assumes same month which is safe for current METARs
+                            const day = parseInt(timeMatch[1], 10);
+                            const hour = parseInt(timeMatch[2], 10);
+                            const min = parseInt(timeMatch[3], 10);
+                            const timeVal = (day * 24 * 60) + (hour * 60) + min;
+                            
+                            // If this message is newer (higher value), pick it.
+                            // Note: Edge case of month rollover (day 31 -> 01) is rare for "current" weather 
+                            // but simpler logic suffices for 99% of cases.
+                            if (timeVal > latestTimeVal) {
+                                latestTimeVal = timeVal;
+                                latestMessage = cleanMsg;
+                            }
+                        } else {
+                            // If we can't parse time but haven't found anything else, keep it candidate
+                            if (!latestMessage) latestMessage = cleanMsg;
+                        }
+                    }
+
+                    // Fallback: if logic failed to pick by time, blindly take the last non-empty one
+                    // (REDEMET usually appends new ones at the end)
+                    if (!latestMessage && rawMessages.length > 0) {
+                        latestMessage = rawMessages[rawMessages.length - 1].replace(/^\d+ - /, '');
                     }
                     
                     // Construct a response object compatible with what we expect
                     const result = [{
-                        rawOb: cleanRaw,
+                        rawOb: latestMessage,
                         station_id: icao,
-                        observation_time: new Date().toISOString(), // REDEMET doesn't give ISO time easily, using current as approx or parsing from text if critical.
-                        // For display purposes, the raw text contains the Z time, which pilots read.
+                        observation_time: new Date().toISOString(), 
                     }];
 
                     return new Response(JSON.stringify(result), {
