@@ -9,6 +9,8 @@ import { Airport } from '../AppContext';
 const Feed = () => {
   const navigate = useNavigate();
   const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike } = useApp();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Airport[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -555,77 +557,6 @@ const PostCard = ({ post, onClick, onLikeToggle }: any) => {
   );
 };
 
-function SearchModal({ isOpen, onClose, searchQuery, setSearchQuery, searchResults, handleSelectAirport, startListening, isListening }: any) {
-  if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 pt-20 px-4" onClick={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}>
-      <div className="w-full max-w-[600px] relative flex flex-col gap-2 animate-in slide-in-from-top-4 duration-300">
-
-        {/* Search Bar */}
-        <div className={`relative flex items-center w-full h-14 rounded-full bg-white dark:bg-[#1a2233] shadow-2xl border border-gray-200 dark:border-gray-700 px-5 transition-shadow hover:shadow-3xl ${searchResults.length > 0 ? 'rounded-b-none rounded-t-3xl border-b-0' : ''}`}>
-          <span className="material-symbols-outlined text-gray-400 text-[24px]">search</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Busque por ICAO, Cidade ou Aeroporto..."
-            className="flex-1 bg-transparent border-none outline-none text-lg text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full px-4"
-            autoFocus
-          />
-
-          <div className="flex items-center gap-2">
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                <span className="material-symbols-outlined !text-[24px]">close</span>
-              </button>
-            )}
-
-            <div className="h-6 w-[1px] bg-gray-300 dark:bg-gray-700 mx-1"></div>
-
-            <button
-              onClick={startListening}
-              className={`p-2 rounded-full transition-all ${isListening
-                ? 'bg-red-100 text-red-500 animate-pulse'
-                : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
-              title="Pesquisa por voz"
-            >
-              <span className="material-symbols-outlined !text-[24px]">{isListening ? 'mic' : 'mic'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Results Dropdown */}
-        {searchResults.length > 0 && (
-          <div className="absolute top-14 left-0 right-0 bg-white dark:bg-[#1a2233] rounded-b-3xl shadow-2xl border border-gray-200 dark:border-gray-700 border-t-0 overflow-hidden max-h-[60vh] overflow-y-auto">
-            <div className="h-[1px] bg-gray-100 dark:bg-gray-800 mx-4 mb-2"></div>
-            {searchResults.map((airport: any) => (
-              <button
-                key={airport.id}
-                onClick={() => handleSelectAirport(airport)}
-                className="w-full text-left px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
-                    <span className="material-symbols-outlined !text-[20px]">flight_takeoff</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#0c121d] dark:text-white block text-sm">{airport.icao}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{airport.city}</span>
-                  </div>
-                </div>
-                <span className="text-[10px] text-gray-400 max-w-[120px] truncate ml-2 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{airport.name}</span>
-              </button>
-            ))}
-            <div className="h-4"></div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-};
 
 export default Feed;
