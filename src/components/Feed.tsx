@@ -5,7 +5,7 @@ import { IMAGES } from '../constants';
 import { parsePhoneticString } from '../utils/phonetic';
 import { supabase } from '../supabaseClient';
 import { Airport } from '../AppContext';
-
+import { getWeather } from '../services/weatherService';
 const Feed = () => {
   const navigate = useNavigate();
   const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike } = useApp();
@@ -50,6 +50,8 @@ const Feed = () => {
 
   // Time State
   const [timeZ, setTimeZ] = useState("");
+  const [metar, setMetar] = useState<string | null>(null);
+  const [isLoadingMetar, setIsLoadingMetar] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -62,6 +64,31 @@ const Feed = () => {
     const interval = setInterval(updateTime, 60000); // Update every minute
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch Weather
+  useEffect(() => {
+    const fetchMetar = async () => {
+      if (!selectedAirport?.icao) return;
+
+      setIsLoadingMetar(true);
+      setMetar(null); // Reset while loading
+
+      try {
+        const data = await getWeather(selectedAirport.icao);
+        if (data && data.raw) {
+          setMetar(data.raw);
+        } else {
+          setMetar("METAR não disponível no momento.");
+        }
+      } catch (err) {
+        setMetar("Erro ao carregar dados meteorológicos.");
+      } finally {
+        setIsLoadingMetar(false);
+      }
+    };
+
+    fetchMetar();
+  }, [selectedAirport]);
 
   const startListening = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -241,10 +268,17 @@ const Feed = () => {
                 <StatusChip color="gray" icon="visibility" label="VIS" />
               </div>
 
-              <div className="bg-gray-50 dark:bg-background-dark/50 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
-                <p className="text-gray-600 dark:text-gray-300 font-mono text-xs leading-relaxed break-all">
-                  SBCT 241200Z 11012KT 9999 BKN020 22/15 Q1018 NOSIG
-                </p>
+              <div className="bg-gray-50 dark:bg-background-dark/50 rounded-lg p-3 border border-gray-100 dark:border-gray-800 min-h-[60px] flex items-center">
+                {isLoadingMetar ? (
+                  <div className="flex items-center gap-2 text-gray-400 text-xs animate-pulse">
+                    <span className="material-symbols-outlined !text-[16px] animate-spin">sync</span>
+                    <span>Atualizando dados...</span>
+                  </div>
+                ) : (
+                  <p className="text-gray-600 dark:text-gray-300 font-mono text-xs leading-relaxed break-all">
+                    {metar || "Aguardando dados..."}
+                  </p>
+                )}
               </div>
 
               <button onClick={() => navigate(user ? '/official' : '/onboarding')} className="flex w-full cursor-pointer items-center justify-center rounded-lg h-10 bg-primary text-white text-sm font-bold gap-2 active:scale-95 transition-transform">
