@@ -150,8 +150,8 @@ const Feed = () => {
               <div className="flex items-center gap-1.5">
                 <h1 className="text-base sm:text-lg font-bold leading-tight tracking-tight text-[#0c121d] dark:text-white truncate">
                   {selectedAirport.icao}
-                  <span className="hidden sm:inline font-normal text-gray-400 mx-1">-</span>
-                  <span className="hidden sm:inline">{selectedAirport.city}</span>
+                  <span className="font-normal text-gray-400 mx-1">-</span>
+                  <span>{selectedAirport.city}</span>
                 </h1>
                 <button
                   onClick={() => toggleFavorite(selectedAirport)}
@@ -165,7 +165,7 @@ const Feed = () => {
           </div>
 
           {/* Right: Compact Persistent Search Bar */}
-          <div className={`relative w-[40px] sm:w-[240px] md:w-[280px] flex items-center h-10 rounded-full bg-white/50 dark:bg-[#1a2233]/50 sm:bg-white sm:dark:bg-[#1a2233] shadow-none sm:shadow-sm border border-transparent sm:border-gray-200 sm:dark:border-gray-700 transition-all focus-within:w-full focus-within:max-w-[300px] focus-within:bg-white focus-within:dark:bg-[#1a2233] focus-within:shadow-md focus-within:border-blue-500/50 ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0 w-full max-w-[300px]' : ''}`}>
+          <div className={`relative w-[140px] sm:w-[240px] md:w-[280px] flex items-center h-10 rounded-full bg-white dark:bg-[#1a2233] shadow-sm border border-gray-200 dark:border-gray-700 transition-all focus-within:w-full focus-within:max-w-[300px] focus-within:shadow-md focus-within:border-blue-500/50 ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0 w-full max-w-[300px]' : ''}`}>
             <div className="absolute left-2.5 flex items-center justify-center pointer-events-none">
               <span className="material-symbols-outlined text-gray-500 text-[20px]">search</span>
             </div>
@@ -174,7 +174,7 @@ const Feed = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar..."
-              className="w-full bg-transparent border-none outline-none text-sm text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full pl-9 pr-8 opacity-0 sm:opacity-100 focus:opacity-100 absolute sm:relative inset-0 sm:inset-auto"
+              className="w-full bg-transparent border-none outline-none text-sm text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full pl-9 pr-8"
             />
 
             <div className="absolute right-1 flex items-center gap-0.5 z-10">
@@ -185,7 +185,7 @@ const Feed = () => {
               )}
               <button
                 onClick={startListening}
-                className={`p-1.5 hidden sm:flex rounded-full transition-all ${isListening
+                className={`p-1.5 flex rounded-full transition-all ${isListening
                   ? 'bg-red-100 text-red-500 animate-pulse'
                   : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
                 title="Pesquisa por voz"
