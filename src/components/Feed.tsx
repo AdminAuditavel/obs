@@ -632,7 +632,9 @@ const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
 
   // Logic for cloud icons based on coverage
   let cloudIcon = 'cloud';
-  if (parsed.ceiling.includes('FEW') || parsed.ceiling.includes('SCT')) {
+  if (parsed.ceiling.includes('CB') || parsed.ceiling.includes('TCU')) {
+    cloudIcon = 'thunderstorm'; // Significant clouds (CB/TCU)
+  } else if (parsed.ceiling.includes('FEW') || parsed.ceiling.includes('SCT')) {
     cloudIcon = 'partly_cloudy_day';
   } else if (parsed.ceiling.includes('BKN') || parsed.ceiling.includes('OVC')) {
     cloudIcon = 'cloud'; // darker/fuller cloud
