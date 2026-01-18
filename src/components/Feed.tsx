@@ -630,7 +630,7 @@ const FlightCategoryBadge = ({ category }: { category: string | null }) => {
   }
 
   return (
-    <div className={`flex items-center justify-center w-8 h-8 rounded-full border shadow-sm ${styleMap[c.color]}`}>
+    <div className={`flex items-center justify-center w-8 h-8 rounded-full border shadow-sm ${styleMap[c.color]} animate-pulse`}>
       <span className="material-symbols-outlined !text-[20px]">{c.icon}</span>
     </div>
   )
