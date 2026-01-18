@@ -43,21 +43,17 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
   } catch (error) {
     console.warn('Edge Function failed, trying fallback:', error);
     
-    // Client-side Fallback (AviationWeather.gov)
+    // Client-side Fallback (VATSIM - CORS friendly, raw text)
     try {
-      const response = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`);
+      const response = await fetch(`https://metar.vatsim.net/metar.php?id=${icao}`);
       if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-           const d = data[0];
+        const text = await response.text();
+        if (text && text.trim().length > 0) {
            return {
-             raw: d.rawOb || d.raw_text || d.rawOb || 'METAR Indisponível',
-             station_id: d.icaoId,
-             observation_time: d.reportTime,
-             temp_c: d.temp,
-             wind_dir_degrees: d.wdir,
-             wind_speed_kt: d.wspd,
-             flight_category: d.flightCategory || 'UNK'
+             raw: text.trim(),
+             station_id: icao,
+             observation_time: new Date().toISOString(), // Approximation
+             flight_category: 'UNK'
            };
         }
       }
