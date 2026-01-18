@@ -604,25 +604,88 @@ const StatusChip = ({ color, icon, label }: any) => {
 const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
   const parsed = parseMetar(rawMetar);
 
+  // Visibility Color Logic
+  // < 1600m: Dark Red (Critical)
+  // < 5000m: Light Red
+  // < 10000m: Yellow
+  // >= 10000m: Blue
+  let visColor = 'blue';
+  if (parsed.vis_meters < 1600) visColor = 'red-dark';
+  else if (parsed.vis_meters < 5000) visColor = 'red';
+  else if (parsed.vis_meters < 10000) visColor = 'yellow';
+
+  // Ceiling Color Logic
+  // < 500': Dark Red
+  // < 1000': Light Red
+  // < 3000': Yellow
+  // >= 3000': Blue
+  let ceilingColor = 'blue';
+  if (parsed.ceiling_ft < 500) ceilingColor = 'red-dark';
+  else if (parsed.ceiling_ft < 1000) ceilingColor = 'red';
+  else if (parsed.ceiling_ft < 3000) ceilingColor = 'yellow';
+
+  // Condition Logic & Icons
+  let condIcon = 'thunderstorm'; // Default fallback
+  let condColor = 'blue';
+  const c = parsed.condition;
+
+  if (c.includes('TS') || c.includes('CB')) {
+    condIcon = 'thunderstorm';
+    condColor = 'red-dark'; // Storms are usually critical attention
+  } else if (c.includes('RA') || c.includes('DZ') || c.includes('SH')) {
+    condIcon = 'rainy';
+    condColor = 'blue';
+  } else if (c.includes('FG') || c.includes('BR') || c.includes('HZ') || c.includes('FU')) {
+    condIcon = 'foggy';
+    condColor = 'yellow'; // Reduced vis usually
+  } else if (c.includes('SN') || c.includes('SG') || c.includes('IC')) {
+    condIcon = 'ac_unit';
+    condColor = 'blue';
+  } else if (c.includes('No Wx') || c.includes('NSW') || c.includes('CAVOK') || c.includes('CLR') || c.includes('SKC')) {
+    condIcon = 'sunny';
+    condColor = 'blue';
+  } else {
+    condIcon = 'cloud'; // OVC/BKN general
+  }
+
   return (
     <div className="grid grid-cols-4 gap-2 mb-3">
-      <WeatherBadgeSmall icon="air" label="Vento" value={parsed.wind} />
-      <WeatherBadgeSmall icon="visibility" label="Visib." value={parsed.visibility} />
-      <WeatherBadgeSmall icon="cloud" label="Teto" value={parsed.ceiling} />
-      <WeatherBadgeSmall icon="thunderstorm" label="Condição" value={parsed.condition} />
+      <WeatherBadgeSmall icon="air" label="Vento" value={parsed.wind} color="blue" />
+      <WeatherBadgeSmall icon="visibility" label="Visib." value={parsed.visibility} color={visColor} />
+      <WeatherBadgeSmall icon="cloud" label="Teto" value={parsed.ceiling_str !== 'N/A' ? parsed.ceiling_str : parsed.ceiling} color={ceilingColor} />
+      <WeatherBadgeSmall icon={condIcon} label="Condição" value={parsed.condition} color={condColor} />
     </div>
   );
 }
 
-const WeatherBadgeSmall = ({ icon, label, value }: any) => (
-  <div className="flex flex-col p-2.5 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
-    <div className="flex items-center gap-1.5 mb-0.5">
-      <span className="material-symbols-outlined text-primary !text-[14px]">{icon}</span>
-      <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500">{label}</span>
+const WeatherBadgeSmall = ({ icon, label, value, color = 'blue' }: any) => {
+  const colorStyles: any = {
+    'blue': 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 text-blue-900 dark:text-blue-100',
+    'yellow': 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/30 text-yellow-900 dark:text-yellow-100',
+    'red': 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30 text-red-900 dark:text-red-100',
+    'red-dark': 'bg-red-700 text-white border-red-800' // High contrast for critical
+  };
+
+  // Icon colors matching text except for red-dark where white is needed
+  const iconColor = color === 'red-dark' ? 'text-white' : 'text-primary';
+  // Actually standard primary is blue, maybe we want icon to match theme?
+  // Let's keep it simple: specific color overrides text, icon usually follows or is distinct.
+
+  // Adjusting inner label colors based on background
+  const labelColor = color === 'red-dark' ? 'text-red-100' : 'text-gray-400 dark:text-gray-500';
+  const valueColor = color === 'red-dark' ? 'text-white' : 'text-gray-800 dark:text-gray-200';
+  const activeIconColor = color === 'red-dark' ? 'text-white' : (color === 'yellow' ? 'text-yellow-600' : (color === 'red' ? 'text-red-600' : 'text-blue-600'));
+
+  return (
+    <div className={`flex flex-col p-2.5 rounded-lg border transition-colors ${colorStyles[color] || colorStyles.blue}`}>
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <span className={`material-symbols-outlined !text-[14px] ${activeIconColor}`}>{icon}</span>
+        <span className={`text-[10px] uppercase font-bold ${labelColor}`}>{label}</span>
+      </div>
+      <span className={`text-xs font-bold truncate ${valueColor}`}>{value}</span>
     </div>
-    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{value}</span>
-  </div>
-);
+  );
+};
 
 const TimeMarker = ({ time, height, opacity, active }: any) => (
   <div className={`flex flex-col items-center gap-1 snap-center transition-all ${opacity}`}>
