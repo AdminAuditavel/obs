@@ -288,6 +288,11 @@ const Feed = () => {
                 <div className="flex items-center gap-2">
                   <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
                   <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
+                  {metar && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                      {parseMetar(metar).type}
+                    </span>
+                  )}
                 </div>
                 {/* <p className="text-primary text-sm font-mono font-bold">{timeZ}</p> */}
                 <FlightCategoryBadge category={flightCategory} />

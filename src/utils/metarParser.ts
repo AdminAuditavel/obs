@@ -1,5 +1,6 @@
 
 export interface ParsedMetar {
+  type: string;
   wind: string;
   visibility: string;
   vis_meters: number;
@@ -17,11 +18,15 @@ export interface ParsedMetar {
 
 export const parseMetar = (raw: string): ParsedMetar => {
   if (!raw) return { 
-    wind: 'N/A', visibility: 'N/A', vis_meters: 9999, ceiling: 'N/A', ceiling_ft: 10000, ceiling_str: 'N/A', condition: 'N/A',
+    type: 'METAR', wind: 'N/A', visibility: 'N/A', vis_meters: 9999, ceiling: 'N/A', ceiling_ft: 10000, ceiling_str: 'N/A', condition: 'N/A',
     tooltips: { wind: '', visibility: '', ceiling: '', condition: '' }
   };
   
   const parts = raw.split(' ');
+  // Default to METAR, check if first part is SPECI or METAR
+  let type = 'METAR';
+  if (raw.includes('SPECI')) type = 'SPECI';
+
   let wind = 'N/A';
   let visibility = 'N/A';
   let vis_meters = 10000;
@@ -169,5 +174,5 @@ export const parseMetar = (raw: string): ParsedMetar => {
       condition: decodeCondition(condition)
   };
 
-  return { wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, tooltips };
+  return { type, wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, tooltips };
 };
