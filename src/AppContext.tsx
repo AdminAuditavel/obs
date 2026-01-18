@@ -318,7 +318,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
     if (error) throw error;
   };
 
-  const signUp = async (email: string, pass: string, name: string, phone?: string, avatarUrl?: string) => {
+  const signUp = async (email: string, pass: string, name: string, phone?: string, avatarUrl?: string, jobTitle: string = 'registered') => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password: pass,
@@ -326,7 +326,8 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
         data: {
           full_name: name,
           phone: phone,
-          avatar_url: avatarUrl
+          avatar_url: avatarUrl,
+          job_title: jobTitle
         }
       }
     });

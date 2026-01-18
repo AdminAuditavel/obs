@@ -10,6 +10,7 @@ const Register = () => {
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
+    const [jobTitle, setJobTitle] = useState('registered');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,7 @@ const Register = () => {
         setLoading(true);
         setError(null);
         try {
-            await signUp(email, password, fullName, phone, avatarUrl || undefined);
+            await signUp(email, password, fullName, phone, avatarUrl || undefined, jobTitle);
             alert('Cadastro realizado! Verifique seu e-mail para confirmar a conta.');
             navigate('/login');
         } catch (err: any) {
@@ -93,6 +94,22 @@ const Register = () => {
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Profissão / Função</label>
+                        <select
+                            className="w-full h-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 focus:ring-2 focus:ring-primary outline-none appearance-none"
+                            value={jobTitle}
+                            onChange={(e) => setJobTitle(e.target.value)}
+                        >
+                            <option value="registered">Entusiasta / Spotter</option>
+                            <option value="pilot">Piloto</option>
+                            <option value="mech">Mecânico</option>
+                            <option value="atc">Controlador (ATC)</option>
+                            <option value="ground">Equipe de Solo</option>
+                            <option value="staff">Staff / Admin</option>
+                        </select>
                     </div>
 
                     <div>

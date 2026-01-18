@@ -14,6 +14,7 @@ const Profile = () => {
   const [editName, setEditName] = useState('');
   const [editCallsign, setEditCallsign] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editJobTitle, setEditJobTitle] = useState('registered');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ const Profile = () => {
       setEditName(user.name);
       setEditCallsign(user.callsign || '');
       setEditPhone(user.phone || '');
+      setEditJobTitle(user.job_title || 'registered');
 
       // Then fetch fresh data from DB
       fetchLatestProfile();
@@ -46,6 +48,7 @@ const Profile = () => {
         setEditName(data.full_name || '');
         setEditCallsign(data.callsign || '');
         setEditPhone(data.phone || '');
+        setEditJobTitle(data.job_title || 'registered');
       }
     } catch (err) {
       console.error('Exception fetching profile:', err);
@@ -87,6 +90,7 @@ const Profile = () => {
           full_name: editName,
           callsign: editCallsign,
           phone: editPhone,
+          job_title: editJobTitle,
           updated_at: new Date()
         }, { onConflict: 'auth_uid' });
 
@@ -154,8 +158,25 @@ const Profile = () => {
                 )}
 
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="material-symbols-outlined text-slate-400 text-sm">badge</span>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm font-normal leading-normal text-center uppercase">{user.role}</p>
+                  {isEditing ? (
+                    <select
+                      className="text-sm font-medium bg-gray-100 dark:bg-gray-800 rounded px-2 w-full max-w-[150px] appearance-none text-center"
+                      value={editJobTitle}
+                      onChange={e => setEditJobTitle(e.target.value)}
+                    >
+                      <option value="registered">Entusiasta</option>
+                      <option value="pilot">Piloto</option>
+                      <option value="mech">Mecânico</option>
+                      <option value="atc">ATC</option>
+                      <option value="ground">Solo</option>
+                      <option value="staff">Staff</option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-slate-400 text-sm">badge</span>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm font-normal leading-normal text-center uppercase">{user.job_title || 'Registrado'}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
