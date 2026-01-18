@@ -603,6 +603,7 @@ const StatusChip = ({ color, icon, label }: any) => {
 
 const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
   const parsed = parseMetar(rawMetar);
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   // Visibility Color Logic
   // < 1600m: Dark Red (Critical)
@@ -656,17 +657,30 @@ const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
     condIcon = 'cloud'; // OVC/BKN general
   }
 
+  const handleBadgeClick = (text: string) => {
+    setActiveTooltip(activeTooltip === text ? null : text);
+  };
+
   return (
-    <div className="grid grid-cols-4 gap-2 mb-3">
-      <WeatherBadgeSmall icon="air" value={parsed.wind} color="blue" tooltip={parsed.tooltips.wind} />
-      <WeatherBadgeSmall icon="visibility" value={parsed.visibility} color={visColor} tooltip={parsed.tooltips.visibility} />
-      <WeatherBadgeSmall icon={cloudIcon} value={parsed.ceiling_str !== 'N/A' ? parsed.ceiling_str : parsed.ceiling} color={ceilingColor} tooltip={parsed.tooltips.ceiling} />
-      <WeatherBadgeSmall icon={condIcon} value={parsed.condition} color={condColor} tooltip={parsed.tooltips.condition} />
+    <div className="flex flex-col mb-3">
+      <div className="grid grid-cols-4 gap-2">
+        <WeatherBadgeSmall icon="air" value={parsed.wind} color="blue" tooltip={parsed.tooltips.wind} onClick={() => handleBadgeClick(parsed.tooltips.wind)} />
+        <WeatherBadgeSmall icon="visibility" value={parsed.visibility} color={visColor} tooltip={parsed.tooltips.visibility} onClick={() => handleBadgeClick(parsed.tooltips.visibility)} />
+        <WeatherBadgeSmall icon={cloudIcon} value={parsed.ceiling_str !== 'N/A' ? parsed.ceiling_str : parsed.ceiling} color={ceilingColor} tooltip={parsed.tooltips.ceiling} onClick={() => handleBadgeClick(parsed.tooltips.ceiling)} />
+        <WeatherBadgeSmall icon={condIcon} value={parsed.condition} color={condColor} tooltip={parsed.tooltips.condition} onClick={() => handleBadgeClick(parsed.tooltips.condition)} />
+      </div>
+
+      {/* Mobile Tooltip Area */}
+      {activeTooltip && (
+        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-md text-xs text-center text-gray-600 dark:text-gray-300 animate-fade-in border border-gray-200 dark:border-gray-700">
+          {activeTooltip}
+        </div>
+      )}
     </div>
   );
 }
 
-const WeatherBadgeSmall = ({ icon, value, color = 'blue', tooltip }: any) => {
+const WeatherBadgeSmall = ({ icon, value, color = 'blue', tooltip, onClick }: any) => {
   // Container always neutral
   const containerStyle = "bg-gray-50 dark:bg-gray-800/40 border-gray-100 dark:border-gray-800";
 
@@ -681,7 +695,7 @@ const WeatherBadgeSmall = ({ icon, value, color = 'blue', tooltip }: any) => {
   const activeColor = textColors[color] || textColors.blue;
 
   return (
-    <div title={tooltip} className={`flex flex-col items-center justify-center p-2.5 rounded-lg border cursor-help transition-all hover:bg-white dark:hover:bg-gray-800 ${containerStyle}`}>
+    <div title={tooltip} onClick={onClick} className={`flex flex-col items-center justify-center p-2.5 rounded-lg border cursor-pointer transition-all hover:bg-white dark:hover:bg-gray-800 active:scale-95 ${containerStyle}`}>
       <span className={`material-symbols-outlined !text-[24px] mb-1 ${activeColor}`}>{icon}</span>
       <span className={`text-[11px] font-bold truncate ${activeColor}`}>{value && value !== 'N/A' ? value : '-'}</span>
     </div>

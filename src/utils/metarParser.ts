@@ -54,37 +54,64 @@ export const parseMetar = (raw: string): ParsedMetar => {
     }
   }
 
-  // Ceiling (First BKN or OVC or VV)
-  // Logic: Find lowest BKN/OVC
-  if (ceiling === 'N/A') {
-      const cloudMatch = raw.match(/\b(BKN|OVC|VV)(\d{3})\b/);
-      if (cloudMatch) {
-          const type = cloudMatch[1];
-          const heightRaw = parseInt(cloudMatch[2]);
-          ceiling_ft = heightRaw * 100;
-          ceiling = `${type}${cloudMatch[2]}`;
-          ceiling_str = `${ceiling_ft}'`;
-      } else if (raw.includes('NSC') || raw.includes('SKC')) {
-          ceiling = 'None';
-          ceiling_ft = 10000;
-          ceiling_str = 'Sem Teto';
-      }
+  // Ceiling Logic
+  // 1. Sig Cloud (CB/TCU)
+  const sigCloudMatch = raw.match(/\b(FEW|SCT|BKN|OVC|VV)(\d{3})(CB|TCU)\b/);
+  // 2. Standard Ceiling (BKN/OVC)
+  const ceilingMatch = raw.match(/\b(BKN|OVC|VV)(\d{3})\b/);
+  // 3. Lowest Layer (FEW/SCT) - Fallback if user wants to see *any* cloud info?
+  //    User said "aparecer no card do teto a nuvem mais significativa". 
+  //    If no ceiling but there is FEW, user might want to see FEW? 
+  //    Standard "Ceiling" is BKN/OVC. But let's show significant > ceiling > lowest.
+  const anyCloudMatch = raw.match(/\b(FEW|SCT|BKN|OVC|VV)(\d{3})\b/);
+
+  if (sigCloudMatch) {
+      // Prioritize TCU/CB
+      const type = sigCloudMatch[1];
+      const heightRaw = parseInt(sigCloudMatch[2]);
+      const mod = sigCloudMatch[3]; // CB or TCU
+      ceiling_ft = heightRaw * 100;
+      ceiling = `${type}${sigCloudMatch[2]}${mod}`;
+      ceiling_str = `${ceiling_ft}' ${mod}`; // e.g. 2300' TCU
+  } else if (ceilingMatch) {
+      // Standard Ceiling
+      const type = ceilingMatch[1];
+      const heightRaw = parseInt(ceilingMatch[2]);
+      ceiling_ft = heightRaw * 100;
+      ceiling = `${type}${ceilingMatch[2]}`;
+      ceiling_str = `${ceiling_ft}'`;
+  } else if (anyCloudMatch && !raw.includes('CAVOK') && !raw.includes('NSC') && !raw.includes('SKC')) {
+      // Fallback: Lowest layer (even if not technically a ceiling, useful info)
+      const type = anyCloudMatch[1];
+      const heightRaw = parseInt(anyCloudMatch[2]);
+      ceiling_ft = heightRaw * 100;
+      ceiling = `${type}${anyCloudMatch[2]}`;
+      ceiling_str = `${ceiling_ft}'`; 
+  } else if (raw.includes('NSC') || raw.includes('SKC')) {
+      ceiling = 'None';
+      ceiling_ft = 10000;
+      ceiling_str = 'Sem Teto';
   }
   
-  // Present Weather (Basic codes)
-  // Look for codes like -RA, TS, BR, FG, HZ, etc.
-  // Expanded regex to capture combined codes (e.g., -TSRA, +SHRA)
+  // Present Weather
   // Format: (Intensity)?(Descriptor)?(Phenomena)+
+  // VCSH case: VC (Intensity) + SH (Descriptor). No Phenomena.
+  // We allow optional phenomena IF descriptor is present.
   const intensity = '(-|\\+|VC)';
   const descriptor = '(MI|BC|DR|BL|SH|TS|FZ|PR)';
   const phenomena = '(DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS)';
   
-  // Construct regex to match one or more of these valid sequences
-  // We match full tokens that contain only these characters (roughly)
-  // Ideally we iterate tokens.
-  const wxTokens = [];
-  const validWxPattern = new RegExp(`^${intensity}?${descriptor}?${phenomena}+$`);
+  // Regex to match:
+  // 1. Full: Int? Desc? Phen+
+  // 2. Desc Only logic: Int? Desc (e.g. VCSH, SHRA? no SHRA matches 1)
+  // Let's just create a combined regex that covers valid cases.
+  // Note: VCSH is valid. TS is valid (Desc only? No, TS is desc, but can be phen in regex context?).
+  // Actually TS is descriptor "Thunderstorm", usually with RA. But "TS" alone is valid.
+  // So we allow (Int)? (Desc) (Phen)? roughly.
   
+  const validWxPattern = new RegExp(`^(${intensity})?(${descriptor})?(${phenomena})+$|^(${intensity})?(${descriptor})+$`);
+  
+  const wxTokens = [];
   for (const part of parts) {
       if (validWxPattern.test(part)) {
           wxTokens.push(part);
@@ -95,10 +122,8 @@ export const parseMetar = (raw: string): ParsedMetar => {
       condition = wxTokens.join(' ');
   } else if (condition === 'N/A' && raw.includes('CAVOK')) {
       condition = 'NSW'; // No Significant Weather
-  } else if (condition === 'N/A') {
-      condition = 'No Wx';
   }
-
+  
   // Helpers for decoding
   const getCloudDescription = (code: string) => {
       const map: Record<string, string> = { 'FEW': 'Poucas Nuvens', 'SCT': 'Nuvens Esparsas', 'BKN': 'Nublado', 'OVC': 'Encoberto', 'VV': 'Céu Obscurecido' };
@@ -113,6 +138,7 @@ export const parseMetar = (raw: string): ParsedMetar => {
      // Simple replacement map for common codes
      let text = cond;
      const replacements: [RegExp, string][] = [
+         [/VCSH/g, 'Pancadas de chuva na vizinhança'],
          [/-TSRA/g, 'Trovoada com chuva leve'],
          [/\+TSRA/g, 'Trovoada com chuva forte'],
          [/TSRA/g, 'Trovoada com chuva moderada'],
