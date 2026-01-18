@@ -27,7 +27,7 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
     if (Array.isArray(data) && data.length > 0) {
       const d = data[0];
       return {
-          raw: d.rawOb || d.raw_text,
+          raw: d.rawOb || d.raw_text || d.raw,
           station_id: d.icaoId || d.station_id,
           observation_time: d.reportTime || d.observation_time,
           flight_category: d.flightCategory || d.flight_category,
