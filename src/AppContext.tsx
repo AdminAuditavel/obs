@@ -136,6 +136,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             full_name,
             avatar_url,
             role_id,
+            job_title,
             callsign
           ),
           media:post_media (
@@ -245,7 +246,8 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
               id: p.author_auth_uid,
               name: p.user?.callsign || p.user?.full_name || 'Desconhecido',
               avatar: p.user?.avatar_url || IMAGES.profileMain,
-              role: p.user?.role_id || 'registered'
+              role: p.user?.role_id || 'registered',
+              job_title: p.user?.job_title
             },
             category: p.category || 'Geral',
             title: p.title || p.description?.substring(0, 20) || 'Sem título',
@@ -304,6 +306,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
       name: data.full_name || 'Usuário',
       avatar: data.avatar_url || IMAGES.profileMain,
       role: data.role_id,
+      job_title: data.job_title,
       callsign: data.callsign,
       email: data.email, // Now guaranteed by sync trigger or initial insert
       phone: data.phone

@@ -37,7 +37,7 @@ export const INITIAL_POSTS: Post[] = [
   {
     id: '2',
     type: 'collaborative',
-    user: { id: 'u1', name: 'PR-GUZ (Pilot)', avatar: IMAGES.pilotAvatar, role: 'pilot' },
+    user: { id: 'u1', name: 'PR-GUZ (Pilot)', avatar: IMAGES.pilotAvatar, role: 'user', job_title: 'pilot' },
     category: 'Visibility',
     title: 'Fog forming on Rwy 15',
     description: 'Visible patches of ground fog near the threshold. Visibility reducing rapidly.',
@@ -46,13 +46,13 @@ export const INITIAL_POSTS: Post[] = [
     createdAt: new Date(Date.now() - 12 * 60000).toISOString(),
     likes: 14,
     comments: [
-      { id: 'c1', user: { id: 'u3', name: 'PT-JFG', avatar: IMAGES.commenter, role: 'pilot' }, text: 'Confirmo, acabei de arremeter por conta do teto baixo.', timestamp: 'Há 5 min' }
+      { id: 'c1', user: { id: 'u3', name: 'PT-JFG', avatar: IMAGES.commenter, role: 'user', job_title: 'pilot' }, text: 'Confirmo, acabei de arremeter por conta do teto baixo.', timestamp: 'Há 5 min' }
     ]
   },
   {
     id: '3',
     type: 'staff',
-    user: { id: 'u2', name: 'Ground OBS (V. Silva)', avatar: IMAGES.groundStaffAvatar, role: 'staff' },
+    user: { id: 'u2', name: 'Ground OBS (V. Silva)', avatar: IMAGES.groundStaffAvatar, role: 'staff', job_title: 'staff' },
     category: 'Security',
     title: 'Wildlife activity near Taxiway Foxtrot',
     description: 'Small group of birds spotted near Bravo-Foxtrot intersection. Operations aware.',

@@ -650,7 +650,7 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
               {isOfficial ? (
                 <span className="material-symbols-outlined text-blue-500 !text-[14px] fill-1">verified</span>
               ) : (
-                <UserBadge role={post.user?.role} />
+                <UserBadge job_title={post.user?.job_title} />
               )}
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-[11px]">{isOfficial ? 'Fonte Oficial' : (post.type === 'staff' ? 'Relato da Equipe' : 'Relato de Usuário')} • {post.timestamp}</p>

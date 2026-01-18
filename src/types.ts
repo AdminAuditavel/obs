@@ -4,7 +4,8 @@ export interface User {
   avatar: string;
   email?: string;
   phone?: string;
-  role?: string;
+  role?: string; // System role (e.g. admin)
+  job_title?: string; // Professional identity (e.g. pilot, mech)
   callsign?: string;
 }
 

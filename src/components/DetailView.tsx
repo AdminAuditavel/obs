@@ -97,7 +97,7 @@ const DetailView = () => {
             {post.type === 'official' ? (
               <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Fonte Oficial</span>
             ) : (
-              <UserBadge role={post.user.role} />
+              <UserBadge job_title={post.user.job_title} />
             )}
           </div>
           <p className="text-[#4567a1] dark:text-gray-400 text-xs font-medium mt-1 uppercase">{post.timestamp} • 5.2nm away</p>

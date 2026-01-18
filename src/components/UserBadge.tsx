@@ -1,12 +1,12 @@
 import React from 'react';
 
 interface UserBadgeProps {
-    role?: string;
+    job_title?: string;
     className?: string;
     showLabel?: boolean;
 }
 
-export const UserBadge = ({ role, className = '', showLabel = true }: UserBadgeProps) => {
+export const UserBadge = ({ job_title, className = '', showLabel = true }: UserBadgeProps) => {
     // Roles: pilot, mech, atc, ground, registered (default)
 
     let icon = '';
@@ -14,7 +14,7 @@ export const UserBadge = ({ role, className = '', showLabel = true }: UserBadgeP
     let color = 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400';
 
     // Normalize role string just in case
-    const r = role?.toLowerCase() || '';
+    const r = job_title?.toLowerCase() || '';
 
     if (r === 'pilot') {
         icon = '✈️';
