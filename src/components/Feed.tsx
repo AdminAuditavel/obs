@@ -139,31 +139,45 @@ const Feed = () => {
     <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
       {/* TopAppBar */}
       <header className="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 py-2 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-[1200px] mx-auto w-full flex items-center gap-4">
+        <div className="max-w-[1200px] mx-auto w-full flex items-center justify-between gap-4">
 
-          {/* Left: Logo & Airport Info */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white overflow-hidden p-0.5 shadow-sm border border-gray-100">
+          {/* Left: Logo & Airport Info & Star */}
+          <div className="flex items-center gap-3 shrink-0 overflow-hidden">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white overflow-hidden p-0.5 shadow-sm border border-gray-100">
               <img src="/app-logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-lg font-bold leading-tight tracking-tight text-[#0c121d] dark:text-white">{selectedAirport.icao}</h1>
-              <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 max-w-[100px] truncate hidden sm:block">{selectedAirport.city}</p>
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-base sm:text-lg font-bold leading-tight tracking-tight text-[#0c121d] dark:text-white truncate">
+                  {selectedAirport.icao}
+                  <span className="hidden sm:inline font-normal text-gray-400 mx-1">-</span>
+                  <span className="hidden sm:inline">{selectedAirport.city}</span>
+                </h1>
+                <button
+                  onClick={() => toggleFavorite(selectedAirport)}
+                  className={`p-0.5 transition-colors ${isFavorited ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                >
+                  <span className={`material-symbols-outlined !text-[18px] sm:!text-[20px] ${isFavorited ? 'fill-1' : ''}`}>star</span>
+                </button>
+              </div>
+              <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 truncate">{selectedAirport.name}</p>
             </div>
           </div>
 
-          {/* Center: Persistent Search Bar */}
-          <div className={`relative flex-1 max-w-[600px] flex items-center h-11 rounded-full bg-white dark:bg-[#1a2233] shadow-sm border border-gray-200 dark:border-gray-700 px-4 transition-all focus-within:shadow-md focus-within:border-blue-500/50 ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0' : ''}`}>
-            <span className="material-symbols-outlined text-gray-400 text-[20px]">search</span>
+          {/* Right: Compact Persistent Search Bar */}
+          <div className={`relative w-[40px] sm:w-[240px] md:w-[280px] flex items-center h-10 rounded-full bg-white/50 dark:bg-[#1a2233]/50 sm:bg-white sm:dark:bg-[#1a2233] shadow-none sm:shadow-sm border border-transparent sm:border-gray-200 sm:dark:border-gray-700 transition-all focus-within:w-full focus-within:max-w-[300px] focus-within:bg-white focus-within:dark:bg-[#1a2233] focus-within:shadow-md focus-within:border-blue-500/50 ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0 w-full max-w-[300px]' : ''}`}>
+            <div className="absolute left-2.5 flex items-center justify-center pointer-events-none">
+              <span className="material-symbols-outlined text-gray-500 text-[20px]">search</span>
+            </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar ICAO..."
-              className="flex-1 bg-transparent border-none outline-none text-sm text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full px-2"
+              placeholder="Buscar..."
+              className="w-full bg-transparent border-none outline-none text-sm text-[#0c121d] dark:text-white placeholder:text-gray-400 font-medium h-full pl-9 pr-8 opacity-0 sm:opacity-100 focus:opacity-100 absolute sm:relative inset-0 sm:inset-auto"
             />
 
-            <div className="flex items-center gap-1">
+            <div className="absolute right-1 flex items-center gap-0.5 z-10">
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
                   <span className="material-symbols-outlined !text-[16px]">close</span>
@@ -171,7 +185,7 @@ const Feed = () => {
               )}
               <button
                 onClick={startListening}
-                className={`p-1.5 rounded-full transition-all ${isListening
+                className={`p-1.5 hidden sm:flex rounded-full transition-all ${isListening
                   ? 'bg-red-100 text-red-500 animate-pulse'
                   : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
                 title="Pesquisa por voz"
@@ -182,7 +196,7 @@ const Feed = () => {
 
             {/* Dropdown Results */}
             {searchResults.length > 0 && (
-              <div className="absolute top-11 left-0 right-0 bg-white dark:bg-[#1a2233] rounded-b-2xl shadow-xl border border-gray-200 dark:border-gray-700 border-t-0 overflow-hidden max-h-[60vh] overflow-y-auto z-50">
+              <div className="absolute top-10 left-0 right-0 bg-white dark:bg-[#1a2233] rounded-b-2xl shadow-xl border border-gray-200 dark:border-gray-700 border-t-0 overflow-hidden max-h-[60vh] overflow-y-auto z-50">
                 <div className="h-[1px] bg-gray-100 dark:bg-gray-800 mx-4 mb-1"></div>
                 {searchResults.map((airport: any) => (
                   <button
@@ -190,11 +204,11 @@ const Feed = () => {
                     onClick={() => handleSelectAirport(airport)}
                     className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-7 w-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-7 w-7 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
                         <span className="material-symbols-outlined !text-[16px]">flight_takeoff</span>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <span className="font-bold text-[#0c121d] dark:text-white block text-xs truncate">{airport.icao}</span>
                         <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate block">{airport.city}</span>
                       </div>
@@ -205,14 +219,6 @@ const Feed = () => {
               </div>
             )}
           </div>
-
-          {/* Right: Star */}
-          <button
-            onClick={() => toggleFavorite(selectedAirport)}
-            className={`p-2 shrink-0 rounded-full transition-colors ${isFavorited ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-          >
-            <span className={`material-symbols-outlined !text-[24px] ${isFavorited ? 'fill-1' : ''}`}>star</span>
-          </button>
         </div>
       </header>
 
