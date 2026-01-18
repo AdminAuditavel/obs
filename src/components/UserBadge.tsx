@@ -7,14 +7,49 @@ interface UserBadgeProps {
 }
 
 export const UserBadge = ({ job_title, className = '', showLabel = true }: UserBadgeProps) => {
-    // Roles: pilot, mech, atc, ground, registered (default)
+    // Roles: pilot, mech, atc, ground, met, staff, registered (default)
+
+    // Safety check
+    if (!job_title || typeof job_title !== 'string') return null;
 
     let icon = '';
     let label = '';
     let color = 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400';
 
-    // Normalize role string just in case
-    const r = job_title?.toLowerCase() || '';
+    const r = job_title.toLowerCase().trim();
 
-    return <span className="text-[10px] bg-gray-200 rounded px-1">DEBUG</span>;
+    if (r === 'pilot') {
+        icon = '✈️';
+        label = 'PILOTO/CMTE';
+        color = 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300';
+    } else if (r === 'mech') {
+        icon = '🔧';
+        label = 'MECÂNICO';
+        color = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+    } else if (r === 'atc') {
+        icon = '📡';
+        label = 'NAV AÉREA';
+        color = 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
+    } else if (r === 'ground') {
+        icon = '🚜';
+        label = 'SOLO';
+        color = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+    } else if (r === 'met') {
+        icon = '🌦️';
+        label = 'MET';
+        color = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+    } else if (r === 'staff' || r === 'admin') {
+        icon = '🛡️';
+        label = 'STAFF';
+        color = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+    } else {
+        return null; // Registered users have no badge
+    }
+
+    return (
+        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${color} ${className}`}>
+            <span className="text-[12px]" role="img" aria-label={label}>{icon}</span>
+            {showLabel && <span>{label}</span>}
+        </span>
+    );
 };
