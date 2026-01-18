@@ -372,7 +372,8 @@ const CreateObservation = () => {
           id: user.id,
           name: user.callsign || user.name || 'Usuário',
           avatar: user.avatar || IMAGES.profileMain,
-          role: user.role || 'registered'
+          role: user.role || 'registered',
+          job_title: user.job_title
         },
         category: category,
         title: title || `${category} em ${area}`,

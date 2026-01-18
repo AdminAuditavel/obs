@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useApp } from '../AppContext';
+import { UserBadge } from './UserBadge';
 
 interface UserProfile {
     id: string; // This is the PK (uuid) of the profile
@@ -10,6 +11,7 @@ interface UserProfile {
     email: string | null;
     phone: string | null;
     role_id: 'admin' | 'moderator' | 'contributor' | 'registered';
+    job_title?: string;
     created_at: string;
 }
 
@@ -96,6 +98,7 @@ const UserList = () => {
                                     <tr>
                                         <th className="px-4 py-3">Usuário</th>
                                         <th className="px-4 py-3">Contato</th>
+                                        <th className="px-4 py-3">Profissão / Badge</th>
                                         <th className="px-4 py-3">Cargo</th>
                                         <th className="px-4 py-3 text-right">Ações</th>
                                     </tr>
@@ -112,6 +115,9 @@ const UserList = () => {
                                                     {u.email && <span className="text-xs">{u.email}</span>}
                                                     {u.phone && <span className="text-xs text-slate-500">{u.phone}</span>}
                                                 </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <UserBadge job_title={u.job_title} />
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold capitalize 
