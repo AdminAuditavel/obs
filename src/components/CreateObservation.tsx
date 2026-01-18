@@ -145,6 +145,40 @@ const CreateObservation = () => {
     fileInputRef.current?.click();
   };
 
+  // Voice Recognition
+  const [isListening, setIsListening] = useState(false);
+  const startListening = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Reconhecimento de voz não suportado neste dispositivo.');
+      return;
+    }
+
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event: any) => {
+      console.error("Speech error", event);
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript) {
+        setDescription(prev => {
+          const separator = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+          return prev + separator + transcript.charAt(0).toUpperCase() + transcript.slice(1);
+        });
+      }
+    };
+
+    recognition.start();
+  };
+
   // Canvas Overlay Function
   const addOverlayToImage = async (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -565,8 +599,17 @@ const CreateObservation = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <div className="flex justify-between px-1">
-              <label className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Descrição</label>
+            <div className="flex justify-between px-1 items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Descrição</label>
+                <button
+                  onClick={startListening}
+                  className={`flex items-center justify-center p-1.5 rounded-full transition-colors ${isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
+                  title="Falar descrição"
+                >
+                  <span className="material-symbols-outlined text-[18px]">{isListening ? 'mic_off' : 'mic'}</span>
+                </button>
+              </div>
               <span className="text-xs text-slate-400">{description.length} / 140</span>
             </div>
             <textarea
