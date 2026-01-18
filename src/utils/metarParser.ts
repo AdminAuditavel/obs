@@ -47,12 +47,26 @@ export const parseMetar = (raw: string): ParsedMetar => {
   
   // Present Weather (Basic codes)
   // Look for codes like -RA, TS, BR, FG, HZ, etc.
-  // We exclude cloud codes and standard headers usually.
-  // Simplistic regex for common weather codes
-  const wxRegex = /\b(-|\+|VC)?(TS|SH|FZ|BL|DR|MI|BC|PR|RA|DZ|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS)\b/g;
-  const wxMatches = raw.match(wxRegex);
-  if (wxMatches) {
-      condition = wxMatches.join(' ');
+  // Expanded regex to capture combined codes (e.g., -TSRA, +SHRA)
+  // Format: (Intensity)?(Descriptor)?(Phenomena)+
+  const intensity = '(-|\\+|VC)';
+  const descriptor = '(MI|BC|DR|BL|SH|TS|FZ|PR)';
+  const phenomena = '(DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS)';
+  
+  // Construct regex to match one or more of these valid sequences
+  // We match full tokens that contain only these characters (roughly)
+  // Ideally we iterate tokens.
+  const wxTokens = [];
+  const validWxPattern = new RegExp(`^${intensity}?${descriptor}?${phenomena}+$`);
+  
+  for (const part of parts) {
+      if (validWxPattern.test(part)) {
+          wxTokens.push(part);
+      }
+  }
+
+  if (wxTokens.length > 0) {
+      condition = wxTokens.join(' ');
   } else if (condition === 'N/A' && raw.includes('CAVOK')) {
       condition = 'NSW'; // No Significant Weather
   } else if (condition === 'N/A') {

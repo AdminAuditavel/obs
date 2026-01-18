@@ -605,7 +605,7 @@ const WeatherBadgesGrid = ({ rawMetar }: { rawMetar: string }) => {
   const parsed = parseMetar(rawMetar);
 
   return (
-    <div className="grid grid-cols-2 gap-2 mb-3">
+    <div className="grid grid-cols-4 gap-2 mb-3">
       <WeatherBadgeSmall icon="air" label="Vento" value={parsed.wind} />
       <WeatherBadgeSmall icon="visibility" label="Visib." value={parsed.visibility} />
       <WeatherBadgeSmall icon="cloud" label="Teto" value={parsed.ceiling} />
