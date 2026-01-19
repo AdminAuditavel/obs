@@ -65,11 +65,17 @@ const OfficialDetails = () => {
           </div>
           <div className="flex flex-col items-center flex-1">
             <h2 className="text-lg font-bold leading-tight tracking-tight">{selectedAirport ? `${selectedAirport.icao} - ${selectedAirport.city}` : 'Carregando...'}</h2>
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-[#4567a1] dark:text-gray-400 font-medium">Ref: {isLoading ? '...' : fetchTime}</span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] text-gray-500 font-medium">Atualizado: {isLoading ? '...' : fetchTime}</span>
               {!isLoading && (
-                <a href={getSourceUrl()} target="_blank" rel="noopener noreferrer" className="text-primary text-xs font-bold hover:underline flex items-center ml-1">
-                  <span className="material-symbols-outlined !text-[14px]">open_in_new</span>
+                <a
+                  href={getSourceUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1 hover:bg-blue-200 transition-colors shadow-sm"
+                >
+                  Fonte Oficial
+                  <span className="material-symbols-outlined !text-[12px]">open_in_new</span>
                 </a>
               )}
             </div>
@@ -93,12 +99,12 @@ const OfficialDetails = () => {
             </div>
           ) : decoded ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4">
-              <WeatherTile icon="thunderstorm" value={decoded.tooltips.condition || 'N/A'} label="Condições" fullWidth={true} />
               <WeatherTile icon="air" value={decoded.wind || 'N/A'} label="Vento" />
               <WeatherTile icon="visibility" value={decoded.visibility || 'N/A'} label="Visibilidade" />
               <WeatherTile icon="cloud" value={decoded.ceiling_str || 'N/A'} label={`Nuvens ${decoded.ceiling !== 'N/A' && decoded.ceiling !== 'None' ? `(${decoded.ceiling})` : ''}`} />
               <WeatherTile icon="thermostat" value={decoded.temperature || 'N/A'} label="Temp / Orvalho" />
               <WeatherTile icon="speed" value={decoded.pressure || 'N/A'} label="QNH / Altímetro" />
+              <WeatherTile icon="thunderstorm" value={decoded.tooltips.condition || 'N/A'} label="Condições" />
             </div>
           ) : (
             <div className="p-8 text-center text-gray-500">
@@ -143,8 +149,8 @@ const OfficialDetails = () => {
   );
 };
 
-const WeatherTile = ({ icon, value, label, fullWidth }: any) => (
-  <div className={`flex flex-1 gap-3 rounded-xl border border-[#cdd7ea] dark:border-gray-800 bg-white dark:bg-background-dark/50 p-4 flex-col ${fullWidth ? 'col-span-2 sm:col-span-3' : ''}`}>
+const WeatherTile = ({ icon, value, label }: any) => (
+  <div className="flex flex-1 gap-3 rounded-xl border border-[#cdd7ea] dark:border-gray-800 bg-white dark:bg-background-dark/50 p-4 flex-col">
     <span className="material-symbols-outlined text-primary">{icon}</span>
     <div className="flex flex-col gap-0.5">
       <h2 className="text-base font-bold leading-tight">{value}</h2>
