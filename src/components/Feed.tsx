@@ -289,7 +289,10 @@ const Feed = () => {
                   <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
                   <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
                   {metar && (
-                    <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                    <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${parseMetar(metar).type === 'SPECI'
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                      }`}>
                       {parseMetar(metar).type}
                     </span>
                   )}
