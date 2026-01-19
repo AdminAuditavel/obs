@@ -8,11 +8,15 @@ export interface ParsedMetar {
   ceiling_ft: number;
   ceiling_str: string;
   condition: string;
+  temperature?: string;
+  pressure?: string;
   tooltips: {
     wind: string;
     visibility: string;
     ceiling: string;
     condition: string;
+    temp?: string;
+    pressure?: string;
   };
 }
 
@@ -129,6 +133,24 @@ export const parseMetar = (raw: string): ParsedMetar => {
       condition = 'NSW'; // No Significant Weather
   }
   
+
+  // Pressure (QNH)
+  let pressure = 'N/A';
+  const qnhMatch = raw.match(/\bQ(\d{4})\b/);
+  if (qnhMatch) {
+      pressure = `${qnhMatch[1]} hPa`;
+  }
+
+  // Temperature / Dewpoint
+  // Format: 22/18 or M02/M05 or 22/M01
+  let temperature = 'N/A';
+  const tempMatch = raw.match(/\b(M?\d{2})\/(M?\d{2})\b/);
+  if (tempMatch) {
+      const t = tempMatch[1].replace('M', '-');
+      const td = tempMatch[2].replace('M', '-');
+      temperature = `${t}° / ${td}°C`;
+  }
+  
   // Helpers for decoding
   const getCloudDescription = (code: string) => {
       const map: Record<string, string> = { 'FEW': 'Poucas Nuvens', 'SCT': 'Nuvens Esparsas', 'BKN': 'Nublado', 'OVC': 'Encoberto', 'VV': 'Céu Obscurecido' };
@@ -171,8 +193,11 @@ export const parseMetar = (raw: string): ParsedMetar => {
       wind: wind !== 'N/A' ? `Vento de ${wind.split('/')[0]} com ${wind.split('/')[1]}`.replace('kt', ' nós') : 'Sem dados de vento',
       visibility: visibility !== 'N/A' ? `Visibilidade de ${visibility}` : 'Sem dados de visibilidade',
       ceiling: ceiling_str !== 'N/A' && ceiling !== 'N/A' ? `${getCloudDescription(ceiling.substring(0,3))} a ${ceiling_str.replace("'", " pés")}` : (ceiling_str === 'Sem Teto' ? 'Céu claro / Sem teto' : 'Sem dados de teto'),
-      condition: decodeCondition(condition)
+      condition: decodeCondition(condition),
+      temp: temperature !== 'N/A' ? `Temperatura: ${temperature.split(' / ')[0]}, Ponto de Orvalho: ${temperature.split(' / ')[1]}` : 'Sem dados de temperatura',
+      pressure: pressure !== 'N/A' ? `Pressão QNH: ${pressure}` : 'Sem dados de pressão'
   };
 
-  return { type, wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, tooltips };
+  return { type, wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, temperature, pressure, tooltips };
 };
+
