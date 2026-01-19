@@ -59,12 +59,19 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
       throw error;
     }
 
+    let d: any = null;
+    
     if (Array.isArray(data) && data.length > 0) {
-      const d = data[0];
+      d = data[0];
+    } else if (data && typeof data === 'object' && !Array.isArray(data) && (data.raw || data.raw_text)) {
+      d = data;
+    }
+
+    if (d) {
       const result: MetarData = {
           raw: d.rawOb || d.raw_text || d.raw,
-          station_id: d.icaoId || d.station_id,
-          observation_time: d.reportTime || d.observation_time,
+          station_id: d.icaoId || d.station_id || icao,
+          observation_time: d.reportTime || d.observation_time || new Date().toISOString(),
           flight_category: d.flightCategory || d.flight_category,
           temp_c: d.temp || d.temp_c,
           // Support multiple potential key formats from checkwx/aviationweather
