@@ -50,19 +50,20 @@ serve(async (req) => {
             if (redResponse.ok) {
                 const text = await redResponse.text();
                 
-                // Check for "Mensagem nao encontrada" OR "não localizada"
-                if (text && text.length > 20 && !text.includes("Mensagem nao encontrada") && !text.includes("não localizada")) {
+                // Check if we have any content
+                if (text && text.length > 20) {
                     // REDEMET returns multiple messages concatenated with '='
-                    // Example format: "202401181030 - SPECI ... ="
-                    const rawMessages = text.split('=').map(m => m.trim()).filter(m => m.length > 10);
+                    // WE DO NOT fail globally if one message is missing ("não localizada").
+                    // We split and filter valid ones.
+                    const rawMessages = text.split('=').map(m => m.trim()).filter(m => m.length > 10 && !m.includes("não localizada") && !m.includes("Mensagem nao encontrada"));
                     
                     const parsedMessages = rawMessages.map((msg, index) => {
                         let cleanMsg = msg;
                         let timeVal = 0;
 
-                        // 1. Try to extract explicit timestamp from REDEMET prefix: "YYYYMMDDHHmm - "
-                        // Regex: Start of string, 12 digits, optional space, hyphen
-                        const prefixMatch = msg.match(/^(\d{12})\s*-\s*/);
+                        // 1. Try to extract explicit timestamp from REDEMET prefix: "YYYYMMDDHHmm" or "YYYYMMDDHH"
+                        // Redemet uses 10 digits for round hours, 12 for SPECIs/others.
+                        const prefixMatch = msg.match(/^(\d{10,12})\s*-\s*/);
 
                         if (prefixMatch) {
                             const tsStr = prefixMatch[1];
@@ -70,7 +71,8 @@ serve(async (req) => {
                             const month = parseInt(tsStr.substring(4, 6), 10) - 1; // JS Month is 0-indexed
                             const day = parseInt(tsStr.substring(6, 8), 10);
                             const hour = parseInt(tsStr.substring(8, 10), 10);
-                            const min = parseInt(tsStr.substring(10, 12), 10);
+                            // If 10 digits, min is 00. If 12, extract it.
+                            const min = tsStr.length === 12 ? parseInt(tsStr.substring(10, 12), 10) : 0;
                             
                             timeVal = new Date(Date.UTC(year, month, day, hour, min)).getTime();
 
