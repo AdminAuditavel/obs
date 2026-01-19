@@ -27,16 +27,33 @@ serve(async (req) => {
     if (isBrazilian) {
         try {
             // REDEMET API
-            const redemetUrl = `https://redemet.decea.gov.br/api/consulta_automatica/index.php?local=${icao}&msg=metar`;
+            // REDEMET API - Use .mil.br and fetch last 12 hours to ensure we get the latest
+            const now = new Date();
+            const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+            
+            // Format YYYYMMDDHH
+            const formatRedemetDate = (d: Date) => {
+                const yyyy = d.getUTCFullYear();
+                const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(d.getUTCDate()).padStart(2, '0');
+                const hh = String(d.getUTCHours()).padStart(2, '0');
+                return `${yyyy}${mm}${dd}${hh}`;
+            };
+
+            const dataIni = formatRedemetDate(twelveHoursAgo);
+            const dataFim = formatRedemetDate(now);
+
+            const redemetUrl = `https://redemet.decea.mil.br/api/consulta_automatica/index.php?local=${icao}&msg=metar&data_ini=${dataIni}&data_fim=${dataFim}`;
             console.log(`Fetching from REDEMET for ${icao}: ${redemetUrl}`);
             const redResponse = await fetch(redemetUrl);
             
             if (redResponse.ok) {
                 const text = await redResponse.text();
                 
-                if (text && text.length > 20 && !text.includes("Mensagem nao encontrada")) {
+                // Check for "Mensagem nao encontrada" OR "não localizada"
+                if (text && text.length > 20 && !text.includes("Mensagem nao encontrada") && !text.includes("não localizada")) {
                     // REDEMET returns multiple messages concatenated with '='
-                    // Example format per message: "202401181030 - SPECI ... ="
+                    // Example format: "202401181030 - SPECI ... ="
                     const rawMessages = text.split('=').map(m => m.trim()).filter(m => m.length > 10);
                     
                     const parsedMessages = rawMessages.map((msg, index) => {
