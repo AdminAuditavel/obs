@@ -36,73 +36,87 @@ serve(async (req) => {
                 
                 if (text && text.length > 20 && !text.includes("Mensagem nao encontrada")) {
                     // REDEMET returns multiple messages concatenated with '='
+                    // Example format per message: "202401181030 - SPECI ... ="
                     const rawMessages = text.split('=').map(m => m.trim()).filter(m => m.length > 10);
                     
-                    const now = new Date();
-
                     const parsedMessages = rawMessages.map((msg, index) => {
                         let cleanMsg = msg;
-                        // Determine type and clean payload
-                        const matchType = msg.match(/(METAR|SPECI)[\s\S]*/);
-                        if (matchType) {
-                            cleanMsg = matchType[0];
-                        } 
+                        let timeVal = 0;
 
-                        // Extract time Z: "181120Z" (DDHHMMZ)
-                        let timeVal = -1;
-                        const timeMatch = cleanMsg.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
-                        
-                        if (timeMatch) {
-                             const day = parseInt(timeMatch[1], 10);
-                             const hour = parseInt(timeMatch[2], 10);
-                             const min = parseInt(timeMatch[3], 10);
-                             
-                             // Robust Date Construction
-                             // Start with current Year/Month/Day
-                             const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, hour, min));
-                             
-                             // Handle Month Boundaries
-                             // If candidate is > 2 days in the future relative to now, assume previous month
-                             const diffDays = (candidate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                        // 1. Try to extract explicit timestamp from REDEMET prefix: "YYYYMMDDHHmm - "
+                        // Regex: Start of string, 12 digits, optional space, hyphen
+                        const prefixMatch = msg.match(/^(\d{12})\s*-\s*/);
 
-                             if (diffDays > 2) {
-                                 // Likely from previous month (e.g. Now Feb 1, Msg Jan 31 -> parsed as Feb 31 -> Mar 3)
-                                 candidate.setUTCMonth(candidate.getUTCMonth() - 1);
-                             } else if (diffDays < -28) {
-                                 // Likely from next month (e.g. Now Jan 31, Msg Feb 1 -> parsed as Jan 1)
-                                 // This case is rare for "latest weather" but handled for correctness
-                                 candidate.setUTCMonth(candidate.getUTCMonth() + 1);
-                             }
+                        if (prefixMatch) {
+                            const tsStr = prefixMatch[1];
+                            const year = parseInt(tsStr.substring(0, 4), 10);
+                            const month = parseInt(tsStr.substring(4, 6), 10) - 1; // JS Month is 0-indexed
+                            const day = parseInt(tsStr.substring(6, 8), 10);
+                            const hour = parseInt(tsStr.substring(8, 10), 10);
+                            const min = parseInt(tsStr.substring(10, 12), 10);
+                            
+                            timeVal = new Date(Date.UTC(year, month, day, hour, min)).getTime();
 
-                             timeVal = candidate.getTime();
+                            // Remove the prefix from the raw message to keep it clean for the frontend
+                            // The frontend expects just "METAR SBGL ..."
+                            cleanMsg = msg.substring(prefixMatch[0].length).trim();
+                        } else {
+                            // Fallback to body parsing if prefix is missing (unexpected for REDEMET API)
+                            const now = new Date();
+                            // ... (Existing fallback logic could go here, but let's keep it simple)
+                            // If no prefix, we try to grab the first time-like string from the body
+                            const timeMatch = msg.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+                            if (timeMatch) {
+                                const day = parseInt(timeMatch[1], 10);
+                                const hour = parseInt(timeMatch[2], 10);
+                                const min = parseInt(timeMatch[3], 10);
+                                const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, hour, min));
+                                // Handle boundaries roughly
+                                const diffDays = (candidate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                                if (diffDays > 2) candidate.setUTCMonth(candidate.getUTCMonth() - 1);
+                                else if (diffDays < -28) candidate.setUTCMonth(candidate.getUTCMonth() + 1);
+                                timeVal = candidate.getTime();
+                            }
                         }
+                        
+                        // Ensure cleanMsg starts with METAR/SPECI for consistency if possible, 
+                        // though REDEMET prefix removal usually leaves it there.
+                        const matchType = cleanMsg.match(/^(METAR|SPECI)/);
+                        const type = matchType ? matchType[0] : (cleanMsg.includes('SPECI') ? 'SPECI' : 'METAR');
 
                         return {
                             raw: cleanMsg,
                             timeVal,
+                            type,
                             originalIndex: index
                         };
                     });
 
                     // Sort strategies:
                     // 1. Time (Desc) - Newest first
-                    // 2. Original Index (Desc) - If times are equal (e.g. COR), assume later in list is newer
+                    // 2. Type Priority - SPECI > METAR if times are equal
+                    // 3. Original Index (Desc) - Tie-breaker
                     parsedMessages.sort((a, b) => {
                         if (b.timeVal !== a.timeVal) {
                             return b.timeVal - a.timeVal;
                         }
+                        // Same time: Prioritize SPECI
+                        if (a.type !== b.type) {
+                            // If a is SPECI, it should come first (return -1)
+                            if (a.type === 'SPECI') return -1;
+                            if (b.type === 'SPECI') return 1;
+                        }
                         return b.originalIndex - a.originalIndex;
                     });
 
-                    // Pick the best candidate (must have valid text)
-                    const bestCandidate = parsedMessages.length > 0 ? parsedMessages[0].raw : null;
+                    // Pick the best candidate
+                    const bestCandidate = parsedMessages.length > 0 ? parsedMessages[0] : null;
 
-                    if (bestCandidate) {
-                        // Construct a response object compatible with what we expect
+                    if (bestCandidate && bestCandidate.raw) {
                         const result = [{
-                            rawOb: bestCandidate,
+                            rawOb: bestCandidate.raw,
                             station_id: icao,
-                            observation_time: new Date().toISOString(), 
+                            observation_time: new Date(bestCandidate.timeVal).toISOString(), 
                         }];
 
                         return new Response(JSON.stringify(result), {
