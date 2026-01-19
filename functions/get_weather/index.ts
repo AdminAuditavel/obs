@@ -27,11 +27,11 @@ serve(async (req) => {
     if (isBrazilian) {
         try {
             // REDEMET API
-            // REDEMET API - Use .mil.br and fetch last 12 hours to ensure we get the latest
+            // Fetch last 14 hours to be safe and ensure coverage
             const now = new Date();
-            const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+            const fetchWindowStart = new Date(now.getTime() - 14 * 60 * 60 * 1000);
             
-            // Format YYYYMMDDHH
+            // Format YYYYMMDDHH - Redemet expects this format
             const formatRedemetDate = (d: Date) => {
                 const yyyy = d.getUTCFullYear();
                 const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -40,9 +40,10 @@ serve(async (req) => {
                 return `${yyyy}${mm}${dd}${hh}`;
             };
 
-            const dataIni = formatRedemetDate(twelveHoursAgo);
+            const dataIni = formatRedemetDate(fetchWindowStart);
             const dataFim = formatRedemetDate(now);
 
+            // Fetch from Redemet API
             const redemetUrl = `https://redemet.decea.mil.br/api/consulta_automatica/index.php?local=${icao}&msg=metar&data_ini=${dataIni}&data_fim=${dataFim}`;
             console.log(`Fetching from REDEMET for ${icao}: ${redemetUrl}`);
             const redResponse = await fetch(redemetUrl);
@@ -53,7 +54,6 @@ serve(async (req) => {
                 // Check if we have any content
                 if (text && text.length > 20) {
                     // REDEMET returns multiple messages concatenated with '='
-                    // WE DO NOT fail globally if one message is missing ("não localizada").
                     // We split and filter valid ones.
                     const rawMessages = text.split('=').map(m => m.trim()).filter(m => m.length > 10 && !m.includes("não localizada") && !m.includes("Mensagem nao encontrada"));
                     
@@ -62,44 +62,81 @@ serve(async (req) => {
                         let timeVal = 0;
 
                         // 1. Try to extract explicit timestamp from REDEMET prefix: "YYYYMMDDHHmm" or "YYYYMMDDHH"
-                        // Redemet uses 10 digits for round hours, 12 for SPECIs/others.
                         const prefixMatch = msg.match(/^(\d{10,12})\s*-\s*/);
+                        let prefixYear = 0, prefixMonth = 0;
 
                         if (prefixMatch) {
                             const tsStr = prefixMatch[1];
-                            const year = parseInt(tsStr.substring(0, 4), 10);
-                            const month = parseInt(tsStr.substring(4, 6), 10) - 1; // JS Month is 0-indexed
+                            prefixYear = parseInt(tsStr.substring(0, 4), 10);
+                            prefixMonth = parseInt(tsStr.substring(4, 6), 10) - 1; // JS Month is 0-indexed
                             const day = parseInt(tsStr.substring(6, 8), 10);
                             const hour = parseInt(tsStr.substring(8, 10), 10);
                             // If 10 digits, min is 00. If 12, extract it.
                             const min = tsStr.length === 12 ? parseInt(tsStr.substring(10, 12), 10) : 0;
                             
-                            timeVal = new Date(Date.UTC(year, month, day, hour, min)).getTime();
+                            // Initial estimate from prefix
+                            timeVal = new Date(Date.UTC(prefixYear, prefixMonth, day, hour, min)).getTime();
 
-                            // Remove the prefix from the raw message to keep it clean for the frontend
-                            // The frontend expects just "METAR SBGL ..."
+                            // Remove the prefix to clean the message
                             cleanMsg = msg.substring(prefixMatch[0].length).trim();
-                        } else {
-                            // Fallback to body parsing if prefix is missing (unexpected for REDEMET API)
-                            const now = new Date();
-                            // ... (Existing fallback logic could go here, but let's keep it simple)
-                            // If no prefix, we try to grab the first time-like string from the body
-                            const timeMatch = msg.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
-                            if (timeMatch) {
-                                const day = parseInt(timeMatch[1], 10);
-                                const hour = parseInt(timeMatch[2], 10);
-                                const min = parseInt(timeMatch[3], 10);
-                                const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, hour, min));
-                                // Handle boundaries roughly
+                        }
+
+                        // 2. Try to refine time from the body directly (DDHHMMZ)
+                        // This is more accurate for minutes than the prefix which often is just the slot hour
+                        const bodyTimeMatch = cleanMsg.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+                        if (bodyTimeMatch) {
+                            const bDay = parseInt(bodyTimeMatch[1], 10);
+                            const bHour = parseInt(bodyTimeMatch[2], 10);
+                            const bMin = parseInt(bodyTimeMatch[3], 10);
+                            
+                            // Construct date using the Year/Month we likely know
+                            // If we have prefix year/month, utilize them. 
+                            // Verify Day match to avoid month boundary errors if prefix is delayed vs body
+                            
+                            let refYear = prefixYear || now.getUTCFullYear();
+                            let refMonth = prefixMatch ? prefixMonth : now.getUTCMonth();
+                            
+                            // Edge Case: Month Boundary
+                            // If Date from body is 01 and Ref Month is Prev Month (e.g. 31), we need to check logic
+                            // or if prefix hasn't been parsed, we rely on standard boundary logic
+                            
+                            const candidate = new Date(Date.UTC(refYear, refMonth, bDay, bHour, bMin));
+                            
+                            // Validation: If candidate is wildly different from prefix time (if existed), we might have a month issue
+                            // But usually Redemet prefix is accurate for Year/Month
+                            
+                            // Re-calculate if we didn't have a prefix, using standard boundary logic
+                            if (!prefixMatch) {
                                 const diffDays = (candidate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
                                 if (diffDays > 2) candidate.setUTCMonth(candidate.getUTCMonth() - 1);
                                 else if (diffDays < -28) candidate.setUTCMonth(candidate.getUTCMonth() + 1);
-                                timeVal = candidate.getTime();
+                            } else {
+                                // If we had a prefix, trust its Year/Month but trust the body's Day/Hour/Minute
+                                // Just in case the day is different (e.g. prefix 2026010100, body 312355Z)
+                                // We should assume the prefix is the delivery slot and body is the observation.
+                                // If day differs, adjust month if needed.
+                                
+                                // Actually, simpliest is: Trust Prefix Year/Month. 
+                                // If prefix day is 01 and body day is 28-31 => It's previous month? 
+                                // Redemet organizes by file slot. A message from 31st 23:55 could be in 01st 00:00 slot?
+                                // Let's check for day rollover.
+                                const pDay = parseInt(prefixMatch[1].substring(6, 8), 10);
+                                if (pDay === 1 && bDay > 27) {
+                                     candidate.setUTCMonth(candidate.getUTCMonth() - 1);
+                                } else if (pDay > 27 && bDay === 1) {
+                                     // Unlikely for old messages in new slot, but possible in reverse?
+                                     candidate.setUTCMonth(candidate.getUTCMonth() + 1);
+                                }
                             }
+                            
+                            timeVal = candidate.getTime();
+                        } else if (!prefixMatch) {
+                             // Fallback if no prefix AND no body match? (Very unlikely)
+                             // Already handled in 'else' block below or timeVal is 0
+                             // We'll let it be 0 and it will sort last.
                         }
                         
-                        // Ensure cleanMsg starts with METAR/SPECI for consistency if possible, 
-                        // though REDEMET prefix removal usually leaves it there.
+                        // Ensure cleanMsg starts with METAR/SPECI
                         const matchType = cleanMsg.match(/^(METAR|SPECI)/);
                         const type = matchType ? matchType[0] : (cleanMsg.includes('SPECI') ? 'SPECI' : 'METAR');
 
