@@ -33,64 +33,82 @@ serve(async (req) => {
             
             if (redResponse.ok) {
                 const text = await redResponse.text();
-                // REDEMET often returns raw text like: "202401181400 METAR SBGR 181400Z ...="
-                // Or sometimes just empty if no data.
+                
                 if (text && text.length > 20 && !text.includes("Mensagem nao encontrada")) {
-                    // REDEMET can return multiple messages concatenated with '='
-                    // e.g. "METAR...= 2024... SPECI...="
-                    // We split by '=' to get individual reports
+                    // REDEMET returns multiple messages concatenated with '='
                     const rawMessages = text.split('=').map(m => m.trim()).filter(m => m.length > 10);
                     
-                    let latestMessage = "";
-                    let latestTimeVal = -1;
+                    const now = new Date();
 
-                    for (const msg of rawMessages) {
-                        // Clean prefix if present: "2026011811 - METAR"
+                    const parsedMessages = rawMessages.map((msg, index) => {
                         let cleanMsg = msg;
+                        // Determine type and clean payload
                         const matchType = msg.match(/(METAR|SPECI)[\s\S]*/);
                         if (matchType) {
                             cleanMsg = matchType[0];
                         } 
 
                         // Extract time Z: "181120Z" (DDHHMMZ)
+                        let timeVal = -1;
                         const timeMatch = cleanMsg.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+                        
                         if (timeMatch) {
-                            // Convert to comparable minutes value (Day * 1440 + Hour * 60 + Min)
-                            // Assumes same month which is safe for current METARs
-                            const day = parseInt(timeMatch[1], 10);
-                            const hour = parseInt(timeMatch[2], 10);
-                            const min = parseInt(timeMatch[3], 10);
-                            const timeVal = (day * 24 * 60) + (hour * 60) + min;
-                            
-                            // If this message is newer (higher value), pick it.
-                            // Note: Edge case of month rollover (day 31 -> 01) is rare for "current" weather 
-                            // but simpler logic suffices for 99% of cases.
-                            if (timeVal > latestTimeVal) {
-                                latestTimeVal = timeVal;
-                                latestMessage = cleanMsg;
-                            }
-                        } else {
-                            // If we can't parse time but haven't found anything else, keep it candidate
-                            if (!latestMessage) latestMessage = cleanMsg;
+                             const day = parseInt(timeMatch[1], 10);
+                             const hour = parseInt(timeMatch[2], 10);
+                             const min = parseInt(timeMatch[3], 10);
+                             
+                             // Robust Date Construction
+                             // Start with current Year/Month/Day
+                             const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, hour, min));
+                             
+                             // Handle Month Boundaries
+                             // If candidate is > 2 days in the future relative to now, assume previous month
+                             const diffDays = (candidate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+                             if (diffDays > 2) {
+                                 // Likely from previous month (e.g. Now Feb 1, Msg Jan 31 -> parsed as Feb 31 -> Mar 3)
+                                 candidate.setUTCMonth(candidate.getUTCMonth() - 1);
+                             } else if (diffDays < -28) {
+                                 // Likely from next month (e.g. Now Jan 31, Msg Feb 1 -> parsed as Jan 1)
+                                 // This case is rare for "latest weather" but handled for correctness
+                                 candidate.setUTCMonth(candidate.getUTCMonth() + 1);
+                             }
+
+                             timeVal = candidate.getTime();
                         }
-                    }
 
-                    // Fallback: if logic failed to pick by time, blindly take the last non-empty one
-                    // (REDEMET usually appends new ones at the end)
-                    if (!latestMessage && rawMessages.length > 0) {
-                        latestMessage = rawMessages[rawMessages.length - 1].replace(/^\d+ - /, '');
-                    }
-                    
-                    // Construct a response object compatible with what we expect
-                    const result = [{
-                        rawOb: latestMessage,
-                        station_id: icao,
-                        observation_time: new Date().toISOString(), 
-                    }];
-
-                    return new Response(JSON.stringify(result), {
-                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                        return {
+                            raw: cleanMsg,
+                            timeVal,
+                            originalIndex: index
+                        };
                     });
+
+                    // Sort strategies:
+                    // 1. Time (Desc) - Newest first
+                    // 2. Original Index (Desc) - If times are equal (e.g. COR), assume later in list is newer
+                    parsedMessages.sort((a, b) => {
+                        if (b.timeVal !== a.timeVal) {
+                            return b.timeVal - a.timeVal;
+                        }
+                        return b.originalIndex - a.originalIndex;
+                    });
+
+                    // Pick the best candidate (must have valid text)
+                    const bestCandidate = parsedMessages.length > 0 ? parsedMessages[0].raw : null;
+
+                    if (bestCandidate) {
+                        // Construct a response object compatible with what we expect
+                        const result = [{
+                            rawOb: bestCandidate,
+                            station_id: icao,
+                            observation_time: new Date().toISOString(), 
+                        }];
+
+                        return new Response(JSON.stringify(result), {
+                            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                        });
+                    }
                 }
             }
         } catch (err) {

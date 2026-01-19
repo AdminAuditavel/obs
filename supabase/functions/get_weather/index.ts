@@ -36,7 +36,15 @@ Deno.serve(async (req) => {
            const json = await res.json();
            // REDEMET Response Structure: { data: { data: [ { id_localidade: "SBCT", mens: "METAR..." } ] } }
            if (json.data && json.data.data && json.data.data.length > 0) {
-             const msg = json.data.data[0].mens;
+             const messages = json.data.data;
+             // Sort by validade_inicial desc (latest first) to capture latest SPECI or METAR
+             messages.sort((a: any, b: any) => {
+                 const dateA = new Date(a.validade_inicial).getTime();
+                 const dateB = new Date(b.validade_inicial).getTime();
+                 return dateB - dateA;
+             });
+
+             const msg = messages[0].mens;
              // Parse basic info from raw string since Redemet doesn't give parsed fields
              metarData = parseMetar(msg, station);
              console.log('REDEMET success');
