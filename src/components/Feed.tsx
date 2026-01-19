@@ -195,15 +195,15 @@ const Feed = () => {
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
       {/* TopAppBar */}
-      <header className="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 py-2 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-[1200px] mx-auto w-full flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 py-3 sm:py-2 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1200px] mx-auto w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4">
 
           {/* Left: Logo & Airport Info & Star */}
-          <div className="flex items-center gap-3 shrink-0 overflow-hidden">
+          <div className="flex items-center gap-3 overflow-hidden order-2 sm:order-1 w-full sm:w-auto">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white overflow-hidden p-0.5 shadow-sm border border-gray-100">
               <img src="/app-logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0 flex-1 sm:flex-none">
               <div className="flex items-center gap-1.5">
                 <h1 className="text-base sm:text-lg font-bold leading-tight tracking-tight text-[#0c121d] dark:text-white truncate">
                   {selectedAirport.icao}
@@ -222,7 +222,7 @@ const Feed = () => {
           </div>
 
           {/* Right: Compact Persistent Search Bar */}
-          <div className={`relative w-[140px] sm:w-[240px] md:w-[280px] flex items-center h-10 rounded-full bg-white dark:bg-[#1a2233] shadow-sm border border-gray-200 dark:border-gray-700 transition-all focus-within:w-full focus-within:max-w-[300px] focus-within:shadow-md focus-within:border-blue-500/50 ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0 w-full max-w-[300px]' : ''}`}>
+          <div className={`relative order-1 sm:order-2 w-full sm:w-[240px] md:w-[280px] flex items-center h-10 rounded-full bg-white dark:bg-[#1a2233] shadow-sm border border-gray-200 dark:border-gray-700 transition-all focus-within:w-full focus-within:max-w-[300px] focus-within:shadow-md focus-within:border-blue-500/50 ${searchResults.length > 0 ? 'rounded-b-none rounded-t-2xl border-b-0 w-full max-w-[300px]' : ''}`}>
             <div className="absolute left-2.5 flex items-center justify-center pointer-events-none">
               <span className="material-symbols-outlined text-gray-500 text-[20px]">search</span>
             </div>
