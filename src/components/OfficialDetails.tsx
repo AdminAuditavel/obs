@@ -10,12 +10,16 @@ const OfficialDetails = () => {
   const [metar, setMetar] = useState<string | null>(null);
   const [decoded, setDecoded] = useState<ParsedMetar | null>(null);
   const [obsTime, setObsTime] = useState<string>('');
+  const [fetchTime, setFetchTime] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchWeather = async () => {
       setIsLoading(true);
       try {
+        const now = new Date();
+        setFetchTime(`${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')}Z`);
+
         const data = await getWeather(selectedAirport.icao);
         if (data && data.raw) {
           setMetar(data.raw);
@@ -41,6 +45,14 @@ const OfficialDetails = () => {
     }
   }, [selectedAirport]);
 
+  const getSourceUrl = () => {
+    if (!selectedAirport) return '#';
+    if (selectedAirport.country_code === 'BR' || selectedAirport.icao.startsWith('SB') || selectedAirport.icao.startsWith('SD') || selectedAirport.icao.startsWith('SI') || selectedAirport.icao.startsWith('SJ') || selectedAirport.icao.startsWith('SN') || selectedAirport.icao.startsWith('SS') || selectedAirport.icao.startsWith('SW')) {
+      return `https://aisweb.decea.mil.br/?i=aerodromos&codigo=${selectedAirport.icao}`;
+    }
+    return `https://www.aviationweather.gov/metar/data?ids=${selectedAirport.icao}`;
+  };
+
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark">
       <div className="fixed max-w-[480px] mx-auto inset-x-0 top-0 z-50 bg-background-light dark:bg-background-dark shadow-sm">
@@ -53,7 +65,14 @@ const OfficialDetails = () => {
           </div>
           <div className="flex flex-col items-center flex-1">
             <h2 className="text-lg font-bold leading-tight tracking-tight">{selectedAirport ? `${selectedAirport.icao} - ${selectedAirport.city}` : 'Carregando...'}</h2>
-            <span className="text-xs text-[#4567a1] dark:text-gray-400 font-medium">Ref: {isLoading ? '...' : obsTime}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-[#4567a1] dark:text-gray-400 font-medium">Ref: {isLoading ? '...' : fetchTime}</span>
+              {!isLoading && (
+                <a href={getSourceUrl()} target="_blank" rel="noopener noreferrer" className="text-primary text-xs font-bold hover:underline flex items-center ml-1">
+                  <span className="material-symbols-outlined !text-[14px]">open_in_new</span>
+                </a>
+              )}
+            </div>
           </div>
           <div className="flex w-12 items-center justify-end">
             <button className="flex items-center justify-center p-0 bg-transparent">
@@ -74,6 +93,7 @@ const OfficialDetails = () => {
             </div>
           ) : decoded ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4">
+              <WeatherTile icon="thunderstorm" value={decoded.tooltips.condition || 'N/A'} label="Condições" fullWidth={true} />
               <WeatherTile icon="air" value={decoded.wind || 'N/A'} label="Vento" />
               <WeatherTile icon="visibility" value={decoded.visibility || 'N/A'} label="Visibilidade" />
               <WeatherTile icon="cloud" value={decoded.ceiling_str || 'N/A'} label={`Nuvens ${decoded.ceiling !== 'N/A' && decoded.ceiling !== 'None' ? `(${decoded.ceiling})` : ''}`} />
@@ -123,8 +143,8 @@ const OfficialDetails = () => {
   );
 };
 
-const WeatherTile = ({ icon, value, label }: any) => (
-  <div className="flex flex-1 gap-3 rounded-xl border border-[#cdd7ea] dark:border-gray-800 bg-white dark:bg-background-dark/50 p-4 flex-col">
+const WeatherTile = ({ icon, value, label, fullWidth }: any) => (
+  <div className={`flex flex-1 gap-3 rounded-xl border border-[#cdd7ea] dark:border-gray-800 bg-white dark:bg-background-dark/50 p-4 flex-col ${fullWidth ? 'col-span-2 sm:col-span-3' : ''}`}>
     <span className="material-symbols-outlined text-primary">{icon}</span>
     <div className="flex flex-col gap-0.5">
       <h2 className="text-base font-bold leading-tight">{value}</h2>
