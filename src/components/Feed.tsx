@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SunCalc from 'suncalc';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../AppContext';
 import { IMAGES } from '../constants';
@@ -156,6 +157,21 @@ const Feed = () => {
     return 'old'; // Gray (< 6h)
   };
 
+  // Calculate Sun Times
+  const sunTimes = React.useMemo(() => {
+    if (selectedAirport?.lat && selectedAirport?.lon) {
+      const times = SunCalc.getTimes(new Date(), selectedAirport.lat, selectedAirport.lon);
+      const formatTime = (date: Date) => {
+        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      };
+      return {
+        sunrise: formatTime(times.sunrise),
+        sunset: formatTime(times.sunset)
+      };
+    }
+    return null;
+  }, [selectedAirport]);
+
   const filteredPosts = posts.filter((post: any) => {
     // 0. Filter Expired (Visual Decay - Focus on NOW)
     // Filter out posts older than 6 hours automatically
@@ -290,11 +306,23 @@ const Feed = () => {
                   <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
                   {metar && (
                     <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${parseMetar(metar).type === 'SPECI'
-                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
                       }`}>
                       {parseMetar(metar).type}
                     </span>
+                  )}
+                  {sunTimes && (
+                    <div className="flex items-center gap-2 ml-2 border-l border-gray-200 dark:border-gray-700 pl-2">
+                      <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                        <span className="material-symbols-outlined !text-[14px] text-amber-500">wb_twilight</span>
+                        {sunTimes.sunrise}
+                      </div>
+                      <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                        <span className="material-symbols-outlined !text-[14px] text-orange-400">wb_twilight</span>
+                        {sunTimes.sunset}
+                      </div>
+                    </div>
                   )}
                 </div>
                 {/* <p className="text-primary text-sm font-mono font-bold">{timeZ}</p> */}
