@@ -31,6 +31,13 @@ export const parseMetar = (raw: string): ParsedMetar => {
   let type = 'METAR';
   if (raw.includes('SPECI')) type = 'SPECI';
 
+  // Heuristic: If time != 00 minutes, likely SPECI (for Brazil/International)
+  const timeMatch = raw.match(/\b\d{2}\d{2}(\d{2})Z\b/);
+  if (timeMatch) {
+      const minutes = parseInt(timeMatch[1], 10);
+      if (minutes !== 0) type = 'SPECI';
+  }
+
   let wind = 'N/A';
   let visibility = 'N/A';
   let vis_meters = 10000;
