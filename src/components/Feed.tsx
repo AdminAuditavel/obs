@@ -356,14 +356,7 @@ const Feed = () => {
                 <WeatherBadgesGrid rawMetar={metar} />
               )}
 
-              {taf && !isLoadingMetar && (
-                <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-3 border border-blue-100 dark:border-blue-900/30 mb-3">
-                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Previsão (TAF)</p>
-                  <p className="text-gray-600 dark:text-gray-300 font-mono text-[10px] leading-relaxed break-all">
-                    {taf}
-                  </p>
-                </div>
-              )}
+
 
               <button onClick={() => navigate(user ? '/official' : '/onboarding')} className="flex w-full cursor-pointer items-center justify-center rounded-lg h-10 bg-primary text-white text-sm font-bold gap-2 active:scale-95 transition-transform">
                 <span className="truncate">Detalhar Condições</span>
