@@ -171,10 +171,9 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
                 callsign,
                 job_title
              )
-             )
           ),
           likes:post_likes (count),
-          confirmations:post_confirmations (count)
+          confirmations:post_confirmations (id)
         `)
         .order('created_at', { ascending: false });
 
@@ -316,7 +315,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             })(),
             createdAt: p.created_at,
             likes: p.likes?.[0]?.count || 0,
-            confirmations: p.confirmations?.[0]?.count || 0,
+            confirmations: p.confirmations ? p.confirmations.length : 0,
             likedByMe: myLikedMap.has(p.id),
             confirmedByMe: myConfMap.has(p.id),
             myLastConfirmationAt: myConfMap.get(p.id),
