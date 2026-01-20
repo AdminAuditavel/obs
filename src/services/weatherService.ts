@@ -94,20 +94,38 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
   } catch (error) {
     console.warn('Edge Function failed, trying fallback:', error);
     
-    // Client-side Fallback (VATSIM - CORS friendly, raw text)
+    // Client-side Fallback
     try {
-      const response = await fetch(`https://metar.vatsim.net/metar.php?id=${icao}`);
-      if (response.ok) {
-        const text = await response.text();
-          if (text && text.trim().length > 0) {
-             const raw = text.trim();
-             return {
-               raw,
-               station_id: icao,
-               observation_time: new Date().toISOString(),
-               flight_category: calculateFlightCategory(raw)
-             };
-          }
+      // 1. Try to fetch METAR (VATSIM is reliable for METAR text)
+      const metarPromise = fetch(`https://metar.vatsim.net/metar.php?id=${icao}`).then(res => res.text());
+      
+      // 2. Try to fetch TAF (AviationWeather JSON is good for this)
+      // Note: This might be subject to CORS depending on the brower/environment, but it's a best-effort fallback.
+      // AviationWeather JSON format: https://aviationweather.gov/api/data/taf?ids=SBGR&format=json
+      const tafPromise = fetch(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`)
+        .then(res => {
+          if (res.ok) return res.json();
+          return null;
+        })
+        .catch(() => null);
+
+      const [metarText, tafJson] = await Promise.all([metarPromise, tafPromise]);
+
+      if (metarText && metarText.trim().length > 0) {
+         const raw = metarText.trim();
+         
+         let tafRaw = null;
+         if (tafJson && Array.isArray(tafJson) && tafJson.length > 0) {
+            tafRaw = tafJson[0].rawOb || tafJson[0].rawTAF;
+         }
+
+         return {
+           raw,
+           station_id: icao,
+           observation_time: new Date().toISOString(),
+           flight_category: calculateFlightCategory(raw),
+           taf: tafRaw
+         };
       }
     } catch (fallbackError) {
        console.error('Fallback weather failed:', fallbackError);
