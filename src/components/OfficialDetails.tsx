@@ -136,22 +136,7 @@ const OfficialDetails = () => {
                 </div>
               </div>
 
-              {/* TAF Block */}
-              {taf && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100">Previsão (TAF)</h3>
-                    <button onClick={() => copyToClipboard(taf)} className="text-[10px] font-bold text-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 px-2 py-1 rounded transition-colors uppercase">
-                      Copiar
-                    </button>
-                  </div>
-                  <div className="bg-[#f5f7fa] dark:bg-[#0d1117] p-4 rounded-lg border-l-4 border-amber-500 shadow-sm">
-                    <p className="font-mono text-sm leading-relaxed text-[#24292f] dark:text-[#c9d1d9] break-all whitespace-pre-wrap">
-                      {taf}
-                    </p>
-                  </div>
-                </div>
-              )}
+
 
             </div>
 
@@ -174,6 +159,23 @@ const OfficialDetails = () => {
                 * A decodificação é apenas para referência rápida. Sempre confirme no texto oficial acima.
               </p>
             </div>
+
+            {/* TAF Block (Moved) */}
+            {taf && (
+              <div className="flex flex-col mt-4 px-4 pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100">Previsão (TAF)</h3>
+                  <button onClick={() => copyToClipboard(taf)} className="text-[10px] font-bold text-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 px-2 py-1 rounded transition-colors uppercase">
+                    Copiar
+                  </button>
+                </div>
+                <div className="bg-[#f5f7fa] dark:bg-[#0d1117] p-4 rounded-lg border-l-4 border-amber-500 shadow-sm">
+                  <p className="font-mono text-sm leading-relaxed text-[#24292f] dark:text-[#c9d1d9] break-all whitespace-pre-wrap">
+                    {taf}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* NOTAMs Section - Keep valid but simplified style */}
             <div className="flex flex-col mt-2 px-4 pb-4">

@@ -85,6 +85,21 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
       if (!result.flight_category || result.flight_category === 'UNK') {
           result.flight_category = calculateFlightCategory(result.raw);
       }
+
+      // ENRICHMENT: If TAF is missing from Edge Function, try client-side fallback
+      if (!result.taf) {
+         try {
+           const tafResponse = await fetch(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`);
+           if (tafResponse.ok) {
+             const tafJson = await tafResponse.json();
+             if (tafJson && Array.isArray(tafJson) && tafJson.length > 0) {
+                result.taf = tafJson[0].rawOb || tafJson[0].rawTAF;
+             }
+           }
+         } catch (enrichErr) {
+           console.warn('Failed to enrich TAF:', enrichErr);
+         }
+      }
       
       return result;
     }
