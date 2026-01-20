@@ -220,136 +220,94 @@ const Feed = () => {
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
       {/* Hero Header */}
-      <div className="relative w-full h-[320px] shrink-0">
+      <div className="relative w-full h-[240px] shrink-0">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src="/header-bg.png"
+            src={(() => {
+              const hour = new Date().getHours();
+              if (hour >= 6 && hour < 9) return '/header-bg-sunrise.png';
+              if (hour >= 9 && hour < 17) return '/header-bg-day.png';
+              return '/header-bg-sunset.png';
+            })()}
             alt="Airport Background"
             className="w-full h-full object-cover"
           />
           {/* Gradient Overlay for Readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-black/30"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/20 to-black/30"></div>
         </div>
 
         {/* Top Floating Bar */}
-        <div className="absolute top-0 left-0 right-0 z-50 px-4 py-4 sm:py-6">
-          <div className="flex items-center gap-3">
-            {/* Menu/Drawer Button */}
-            <button
-              onClick={() => setIsFilterOpen(true)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/30 transition-colors"
-            >
-              <span className="material-symbols-outlined">menu</span>
-            </button>
-
-            {/* Glassy Search Bar */}
-            <div className="flex-1 flex items-center h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/10 px-4 transition-all focus-within:bg-black/40 focus-within:border-white/20">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Buscar (${selectedAirport.icao || 'Aeroporto'}...)`}
-                className="w-full bg-transparent border-none outline-none text-sm text-white placeholder:text-gray-300 font-medium h-full"
-              />
-              <div className="flex items-center gap-2">
-                {searchQuery ? (
-                  <button onClick={() => setSearchQuery('')} className="text-gray-300 hover:text-white">
-                    <span className="material-symbols-outlined !text-[18px]">close</span>
-                  </button>
-                ) : (
-                  <span className="material-symbols-outlined !text-[18px] text-gray-300">search</span>
-                )}
-                <button
-                  onClick={startListening}
-                  className={`flex items-center justify-center ${isListening ? 'text-red-400 animate-pulse' : 'text-gray-300 hover:text-white'}`}
-                >
-                  <span className="material-symbols-outlined !text-[18px]">mic</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Avatar */}
-            <div
-              onClick={() => navigate('/profile')}
-              className="h-10 w-10 rounded-full overflow-hidden border-2 border-white/20 cursor-pointer hover:border-white/50 transition-colors"
-            >
-              <img src={user?.avatar || IMAGES.avatar1} alt="Profile" className="w-full h-full object-cover" />
-            </div>
+        <div className="absolute top-0 left-0 right-0 z-50 px-4 py-6 flex justify-between items-start">
+          {/* Top Left: ICAO */}
+          <div className="bg-black/30 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
+            <span className="text-white font-mono font-bold text-xs tracking-wider">
+              {selectedAirport.icao}
+            </span>
           </div>
 
-          {/* Search Dropdown Results */}
-          {searchResults.length > 0 && (
-            <div className="absolute top-16 left-4 right-4 bg-white dark:bg-[#1a2233] rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[60vh] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2">
-              {searchResults.map((airport: any) => (
-                <button
-                  key={airport.id}
-                  onClick={() => handleSelectAirport(airport)}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-8 w-8 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                      <span className="material-symbols-outlined text-gray-500">flight_takeoff</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="font-bold text-[#0c121d] dark:text-white block text-sm truncate">{airport.icao} / {airport.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{airport.city}, {airport.state}</span>
-                    </div>
-                  </div>
+          {/* Top Right: Search */}
+          <div className="flex items-center h-9 rounded-full bg-black/30 backdrop-blur-md border border-white/10 px-3 transition-all focus-within:bg-black/50 focus-within:border-white/20 w-[180px] focus-within:w-[220px]">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar..."
+              className="w-full bg-transparent border-none outline-none text-xs text-white placeholder:text-gray-300 font-medium h-full"
+            />
+            <div className="flex items-center gap-1">
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-gray-300 hover:text-white">
+                  <span className="material-symbols-outlined !text-[16px]">close</span>
                 </button>
-              ))}
+              )}
+              <button
+                onClick={startListening}
+                className={`flex items-center justify-center ${isListening ? 'text-red-400 animate-pulse' : 'text-gray-300 hover:text-white'}`}
+              >
+                <span className="material-symbols-outlined !text-[16px]">{isListening ? 'mic' : 'mic'}</span>
+              </button>
             </div>
-          )}
+
+            {/* Search Dropdown Results */}
+            {searchResults.length > 0 && (
+              <div className="absolute top-10 right-0 left-auto w-[280px] bg-white dark:bg-[#1a2233] rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[60vh] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2">
+                {searchResults.map((airport: any) => (
+                  <button
+                    key={airport.id}
+                    onClick={() => handleSelectAirport(airport)}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                        <span className="material-symbols-outlined text-gray-500">flight_takeoff</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="font-bold text-[#0c121d] dark:text-white block text-sm truncate">{airport.icao} / {airport.name}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{airport.city}, {airport.state}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Hero Content (Bottom Aligned) */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col gap-4 z-20">
-
-          {/* Airport Info Chips */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center px-3 py-1 rounded-md bg-black/40 backdrop-blur-sm border border-white/10">
-              <span className="text-white font-bold text-sm tracking-wider">
-                {selectedAirport.icao}
-                <span className="mx-1.5 opacity-50">/</span>
-                {selectedAirport.icao === 'SBSP' ? 'CGH' : selectedAirport.icao.substring(2)}
-              </span>
-            </div>
-            {/* Distance Stub - would need user location to be real */}
-            {selectedAirport.lat && (
-              <div className="flex items-center gap-1 text-white/80 text-xs font-medium drop-shadow-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                <span>12nm NE</span>
-              </div>
-            )}
-            <div className="flex-1"></div>
-            {/* Refresh Timer / Status Stub */}
-            <div className="flex items-center gap-1.5 text-white/70 text-xs">
-              <span className="material-symbols-outlined !text-[14px]">history</span>
-              <span>2m</span>
-            </div>
-          </div>
-
+        <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col items-start gap-1 z-20">
           {/* Airport Name & Star */}
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight drop-shadow-lg max-w-[80%]">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white leading-tight drop-shadow-lg">
               {selectedAirport.name.replace('Aeroporto ', '')}
             </h1>
             <button
               onClick={() => toggleFavorite(selectedAirport)}
-              className={`h-10 w-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all ${isFavorited ? 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-500' : 'bg-white/10 border border-white/10 text-white hover:bg-white/20'}`}
+              className={`p-1 rounded-full transition-all hover:scale-110 ${isFavorited ? 'text-yellow-500' : 'text-white/50 hover:text-yellow-400'}`}
             >
-              <span className={`material-symbols-outlined ${isFavorited ? 'fill-1' : ''}`}>star</span>
+              <span className={`material-symbols-outlined !text-[20px] ${isFavorited ? 'fill-1' : ''}`}>star</span>
             </button>
           </div>
-
-          {/* Map CTA */}
-          <button
-            onClick={() => navigate('/map')}
-            className="flex w-full items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold h-12 rounded-xl shadow-lg shadow-blue-900/20 active:scale-98 transition-all mt-1"
-          >
-            <span className="material-symbols-outlined">map</span>
-            Ver mapa / rota
-          </button>
         </div>
       </div>
 
