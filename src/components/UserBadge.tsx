@@ -21,7 +21,7 @@ export const UserBadge = ({ job_title, className = '', showLabel = true }: UserB
     if (r === 'pilot') {
         icon = '✈️';
         label = 'PILOTO/CMTE';
-        color = 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300';
+        color = 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300';
     } else if (r === 'mech') {
         icon = '🔧';
         label = 'MECÂNICO';

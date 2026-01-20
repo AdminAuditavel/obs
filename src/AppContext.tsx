@@ -38,6 +38,7 @@ interface AppContextType {
   reportPost: (postId: string, reason: string, comment?: string, contact?: string) => Promise<any>;
   createComment: (postId: string, content: string) => Promise<any>;
   toggleLike: (postId: string) => Promise<void>;
+  fetchPosts: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -522,7 +523,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
       user, posts, invites, reports, selectedAirport, setSelectedAirport,
       addPost, updatePost, addInvite, removeInvite, resolveReport, addComment,
       signIn, signUp, signOut, logAudit, favoriteAirports, toggleFavorite,
-      confirmPostValidity, reportPost, createComment, toggleLike
+      confirmPostValidity, reportPost, createComment, toggleLike, fetchPosts
     }}>
       {children}
     </AppContext.Provider>

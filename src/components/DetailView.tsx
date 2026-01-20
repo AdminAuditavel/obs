@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { IMAGES } from '../constants';
@@ -8,12 +8,16 @@ import { UserBadge } from './UserBadge';
 const DetailView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { posts, createComment, confirmPostValidity, reportPost, toggleLike, user } = useApp();
+  const { posts, createComment, confirmPostValidity, reportPost, toggleLike, user, fetchPosts } = useApp();
   const [commentText, setCommentText] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportComment, setReportComment] = useState('');
   const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
   const post = posts.find(p => p.id === id);
 

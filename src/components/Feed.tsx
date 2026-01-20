@@ -12,11 +12,16 @@ import { UserBadge } from './UserBadge';
 import { parseMetar } from '../utils/metarParser';
 const Feed = () => {
   const navigate = useNavigate();
-  const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike } = useApp();
+  const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike, fetchPosts } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Airport[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Refetch posts on mount to ensure freshness (e.g. back from detail, or tab switch)
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
 
   // Filter States
