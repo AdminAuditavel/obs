@@ -279,8 +279,8 @@ const Feed = () => {
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex justify-between items-center group transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-8 w-8 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                        <span className="material-symbols-outlined text-gray-500">flight_takeoff</span>
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-white border border-gray-100 dark:border-gray-800 flex items-center justify-center overflow-hidden p-[1px]">
+                        <img src="/app-logo.png" alt="Logo" className="w-full h-full object-contain" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <span className="font-bold text-[#0c121d] dark:text-white block text-sm truncate">{airport.icao} / {airport.name}</span>
