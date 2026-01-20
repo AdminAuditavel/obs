@@ -171,7 +171,7 @@ const OfficialDetails = () => {
                 </div>
               )}
               <p className="text-[10px] text-gray-400 mt-4 text-center">
-                * A decodificação é apenas para referência rápida. Sempre confie no texto oficial acima.
+                * A decodificação é apenas para referência rápida. Sempre confirme no texto oficial acima.
               </p>
             </div>
 
