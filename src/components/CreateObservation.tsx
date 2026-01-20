@@ -86,8 +86,17 @@ const CreateObservation = () => {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
 
-  // Time State
+  // ... (keeping existing code)
+
+  const handleTriggerCamera = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleTriggerLibrary = () => {
+    libraryInputRef.current?.click();
+  };
   // Time State
   const [timeZ, setTimeZ] = useState("");
 
@@ -145,9 +154,7 @@ const CreateObservation = () => {
     }
   };
 
-  const handleTriggerCamera = () => {
-    fileInputRef.current?.click();
-  };
+
 
   // Voice Recognition
   const [isListening, setIsListening] = useState(false);
@@ -502,11 +509,18 @@ const CreateObservation = () => {
             onChange={handleFileChange}
             className="hidden"
           />
+          <input
+            type="file"
+            accept="image/*"
+            ref={libraryInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+          />
 
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 pt-12">
             <div className="flex items-center justify-center gap-8">
               <button
-                onClick={handleTriggerCamera}
+                onClick={handleTriggerLibrary}
                 className="flex shrink-0 items-center justify-center rounded-full size-12 bg-white/20 backdrop-blur-md text-white border border-white/30 active:scale-95 transition-transform"
               >
                 <span className="material-symbols-outlined">image</span>
