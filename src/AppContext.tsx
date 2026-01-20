@@ -319,7 +319,9 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             likedByMe: myLikedMap.has(p.id),
             confirmedByMe: myConfMap.has(p.id),
             myLastConfirmationAt: myConfMap.get(p.id),
-            comments: sortedCommentsList
+            comments: sortedCommentsList,
+            latitude: p.latitude,
+            longitude: p.longitude
           };
         });
 
