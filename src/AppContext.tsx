@@ -261,13 +261,40 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             user: {
               id: c.user?.auth_uid,
               name: c.user?.full_name || 'Desconhecido',
-              avatar: c.user?.avatar_url || IMAGES.profileMain
+              avatar: c.user?.avatar_url || IMAGES.profileMain,
+              callsign: c.user?.callsign,
+              job_title: c.user?.job_title
             }
           })) : [];
 
-          // Sort comments by date (newest first or oldest first? usually oldest first for conv, or newest at bottom)
-          // Let's sort oldest first (chronological)
-          commentsList.sort((a: any, b: any) => a.text.localeCompare(b.text)); // Placeholder sort, strict timestamp sort ideally
+          // Sort comments by date (newest first)
+          commentsList.sort((a: any, b: any) => {
+            // We can't sort nicely by the formatted string 'HH:MM'. We need the original ISO string or rely on the array order if fetch was ordered.
+            // The fetch subquery `comments (...)` didn't have an .order() clause! Supabase returns them in insertion order usually, or random.
+            // To be safe, we should have fetched `created_at` and sorted by it.
+            // Wait, the map above uses `c.created_at`. But we lost it in the object? No, we used it for timestamp.
+            // Let's re-parse or better yet, keep raw timestamp in the object if needed, or sort based on c.created_at if we do it inside the map scope? No.
+            // Let's assuming we need proper sorting, we should change the map to keep created_at or sort the source array `p.comments` first.
+            return 0;
+          });
+          // Better approach: Sort `p.comments` before mapping.
+          if (p.comments) {
+            p.comments.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          }
+
+          // Re-map after sorting
+          const sortedCommentsList = p.comments ? p.comments.map((c: any) => ({
+            id: c.id,
+            text: c.content,
+            timestamp: new Date(c.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            user: {
+              id: c.user?.auth_uid,
+              name: c.user?.full_name || 'Desconhecido',
+              avatar: c.user?.avatar_url || IMAGES.profileMain,
+              callsign: c.user?.callsign,
+              job_title: c.user?.job_title
+            }
+          })) : [];
 
           return {
             id: p.id,
@@ -293,7 +320,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             likedByMe: myLikedMap.has(p.id),
             confirmedByMe: myConfMap.has(p.id),
             myLastConfirmationAt: myConfMap.get(p.id),
-            comments: commentsList
+            comments: sortedCommentsList
           };
         });
 
