@@ -311,7 +311,7 @@ const Feed = () => {
         </div>
       </div>
 
-      <main className="flex-1 pb-32 -mt-4 relative z-30">
+      <main className="flex-1 pb-32 relative z-30">
         {/* Official Summary Card */}
         <div className="p-4">
           <div className="flex flex-col items-stretch justify-start rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2233] overflow-hidden">
