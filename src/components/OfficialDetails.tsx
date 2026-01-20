@@ -201,6 +201,13 @@ const OfficialDetails = () => {
             Copiar Boletim Completo
           </button>
         </div>
+        {/* DEBUG BLOCK - REMOVE LATER */}
+        <details className="mt-2 text-[10px] text-gray-500">
+          <summary>Dados de Debug</summary>
+          <pre className="p-2 bg-gray-100 rounded mt-1 overflow-auto max-h-40">
+            {JSON.stringify({ metar, taf, isLoading }, null, 2)}
+          </pre>
+        </details>
       </div>
 
     </div>
