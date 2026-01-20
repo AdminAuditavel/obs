@@ -792,32 +792,35 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
   let borderClass = 'border-gray-200 dark:border-gray-800';
   let badge = null;
 
+  // Timestamp Style Logic
+  let timestampStyle = "text-gray-500 dark:text-gray-400 font-normal"; // Default old
+
   if (!isOfficial) {
     if (status === 'fresh') {
       borderClass = 'border-green-400 shadow-md shadow-green-100 dark:shadow-none';
       badge = <span className="absolute -top-2 right-2 px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-sm animate-pulse">AGORA</span>;
+      timestampStyle = "text-blue-600 dark:text-blue-400 font-bold"; // Fresh: Vivid Blue & Bold
     } else if (status === 'aging') {
       borderClass = 'border-yellow-400';
+      timestampStyle = "text-blue-500/80 dark:text-blue-400/80 font-medium"; // Aging: Muted Blue
     } else if (status === 'old') {
       borderClass = 'border-gray-200 dark:border-gray-800 opacity-60 grayscale-[50%]';
+      timestampStyle = "text-gray-400 dark:text-gray-500 font-normal"; // Old: Gray
     }
   }
 
   const cardBg = isOfficial ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50' : `bg-white dark:bg-[#1a2233] ${borderClass}`;
 
-  const handleLikeClick = (e: any) => {
+  const handleConfirmClick = async (e: any) => {
     e.stopPropagation();
-    if (onLikeToggle) {
-      onLikeToggle();
-    }
-  };
+    if (post.confirmedByMe || confirming) return; // Prevent double confirm
 
-  const handleQuickConfirm = async (e: any) => {
-    e.stopPropagation();
     setConfirming(true);
     try {
       await confirmPostValidity(post.id);
-      // We rely on realtime or parent refresh, but for UI feedback we can just show success state locally if needed
+      // Optimistic UI update could be handled by parent state update, 
+      // but AppContext usually refetches or we rely on the returned count update if we wired it up.
+      // For now, simple feedback:
     } catch (err) {
       console.error(err);
     } finally {
@@ -828,23 +831,6 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
   return (
     <div onClick={onClick} className={`relative flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:bg-opacity-90 ${cardBg}`}>
       {badge}
-
-      {/* Visual Decay "Still Relevant?" Prompt */}
-      {!isOfficial && status === 'aging' && !post.confirmedByMe && (
-        <div className="absolute -top-3 left-4 right-4 bg-yellow-100 dark:bg-yellow-900/80 border border-yellow-200 dark:border-yellow-700 rounded-lg p-2 shadow-sm z-10 flex items-center justify-between animate-in slide-in-from-top-2">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-yellow-700 dark:text-yellow-400 !text-[16px]">help</span>
-            <span className="text-xs font-bold text-yellow-800 dark:text-yellow-100">Ainda relevante?</span>
-          </div>
-          <button
-            onClick={handleQuickConfirm}
-            disabled={confirming}
-            className="px-3 py-1 bg-white dark:bg-black/20 rounded text-xs font-bold text-yellow-800 dark:text-yellow-100 shadow-sm border border-yellow-200 dark:border-yellow-700 hover:bg-yellow-50 active:scale-95 disabled:opacity-50"
-          >
-            {confirming ? '...' : 'Confirmar'}
-          </button>
-        </div>
-      )}
 
       <div className="flex items-start justify-between mt-2">
         <div className="flex gap-3">
@@ -860,7 +846,11 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
                 <UserBadge job_title={post.user?.job_title} />
               )}
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-[11px]">{isOfficial ? 'Fonte Oficial' : (post.type === 'staff' ? 'Relato da Equipe' : 'Relato de Usuário')} • {post.timestamp}</p>
+            <div className="flex items-center gap-1.5 text-[11px]">
+              <p className="text-gray-500 dark:text-gray-400">{isOfficial ? 'Fonte Oficial' : (post.type === 'staff' ? 'Relato da Equipe' : 'Relato de Usuário')}</p>
+              <span className="text-gray-300">•</span>
+              <p className={`${timestampStyle}`}>{post.timestamp}</p>
+            </div>
           </div>
         </div>
         {post.category && <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-bold uppercase tracking-tight">{post.category}</span>}
@@ -874,22 +864,18 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
           {!isOfficial && (
             <div className="flex gap-4 mt-2">
               <button
-                onClick={handleLikeClick}
-                className={`flex items-center gap-1 text-xs font-medium transition-colors ${post.likedByMe ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={handleConfirmClick}
+                disabled={post.confirmedByMe || confirming}
+                className={`flex items-center gap-1 text-xs font-medium transition-colors ${post.confirmedByMe ? 'text-green-600 dark:text-green-400' : 'text-gray-500 hover:text-green-600'}`}
               >
-                <span className={`material-symbols-outlined !text-[18px] ${post.likedByMe ? 'fill-1' : ''}`}>thumb_up</span>
-                {post.likes > 0 ? post.likes : '0'}
+                <span className={`material-symbols-outlined !text-[18px] ${post.confirmedByMe ? 'fill-1' : ''}`}>check_circle</span>
+                {confirming ? '...' : (post.confirmations > 0 ? post.confirmations : 'Confirmar')}
               </button>
+
               <button className="flex items-center gap-1 text-gray-500 text-xs font-medium hover:text-gray-700">
                 <span className="material-symbols-outlined !text-[18px]">chat_bubble</span>
                 {post.comments ? post.comments.length : 0}
               </button>
-              {post.confirmedByMe && (
-                <span className="text-green-600 dark:text-green-400 text-xs font-bold flex items-center gap-1">
-                  <span className="material-symbols-outlined !text-[14px]">check_circle</span>
-                  Confirmado
-                </span>
-              )}
             </div>
           )}
         </div>
