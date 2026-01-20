@@ -11,6 +11,9 @@ import { getWeather } from '../services/weatherService';
 import { UserBadge } from './UserBadge';
 import { parseMetar } from '../utils/metarParser';
 import { TimeTimeline } from './TimeTimeline';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { SkeletonPost } from './SkeletonPost';
+import { haptics } from '../utils/haptics';
 const Feed = () => {
   const navigate = useNavigate();
   const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike, fetchPosts } = useApp();
@@ -18,10 +21,25 @@ const Feed = () => {
   const [searchResults, setSearchResults] = useState<Airport[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
 
-  // Refetch posts on mount to ensure freshness (e.g. back from detail, or tab switch)
+  const handleRefresh = async () => {
+    haptics.impactMedium();
+    await fetchPosts();
+    // Simulate a minimum delay for feeling
+    await new Promise(r => setTimeout(r, 800));
+  };
+
+  const { isRefreshing, pullDistance } = usePullToRefresh(handleRefresh);
+
+  // Refetch posts on mount
   useEffect(() => {
-    fetchPosts();
+    const load = async () => {
+      setIsLoadingFeed(true);
+      await fetchPosts();
+      setIsLoadingFeed(false);
+    };
+    load();
   }, []);
 
 
@@ -356,7 +374,16 @@ const Feed = () => {
         </div>
       </div>
 
-      <main className="flex-1 pb-32 relative z-30">
+      <main className="flex-1 pb-32 relative z-30 transition-transform duration-200 ease-out" style={{ transform: `translateY(${pullDistance}px)` }}>
+        {/* Pull To Refresh Indicator */}
+        <div className="absolute top-[-50px] left-0 right-0 flex justify-center items-center h-[50px]">
+          {isRefreshing ? (
+            <span className="material-symbols-outlined animate-spin text-primary">sync</span>
+          ) : (
+            <span className="material-symbols-outlined text-primary/50" style={{ transform: `rotate(${pullDistance * 2}deg)` }}>arrow_downward</span>
+          )}
+        </div>
+
         {/* Official Summary Card */}
         {/* Official Summary Card (Conditional TAF or METAR) */}
         <div className="p-4">
@@ -454,7 +481,14 @@ const Feed = () => {
 
         <div className="flex flex-col gap-4 p-4">
           <AnimatePresence mode='popLayout'>
-            {filteredPosts.length > 0 ? (
+            {isLoadingFeed ? (
+              // Skeletons
+              <>
+                <SkeletonPost />
+                <SkeletonPost />
+                <SkeletonPost />
+              </>
+            ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post: any) => (
                 <motion.div
                   key={post.id}
@@ -467,8 +501,8 @@ const Feed = () => {
                   <PostCard
                     post={post}
                     status={getPostAgeStatus(post.createdAt)}
-                    onClick={() => navigate(user ? `/detail/${post.id}` : '/onboarding')}
-                    onLikeToggle={() => toggleLike(post.id)}
+                    onClick={() => { haptics.impactLight(); navigate(user ? `/detail/${post.id}` : '/onboarding'); }}
+                    onLikeToggle={() => { haptics.impactMedium(); toggleLike(post.id); }}
                   />
                 </motion.div>
               ))
@@ -480,7 +514,7 @@ const Feed = () => {
               >
                 <span className="material-symbols-outlined !text-[48px] mb-2 opacity-50">search_off</span>
                 <p>Nenhum post ativo encontrado.<br />Mostrando apenas últimas 6 horas.</p>
-                <button onClick={() => { setSelectedTypes(['official', 'collaborative', 'staff']); setSelectedCategories([]); }} className="text-primary text-sm font-bold mt-2">
+                <button onClick={() => { haptics.impactLight(); setSelectedTypes(['official', 'collaborative', 'staff']); setSelectedCategories([]); }} className="text-primary text-sm font-bold mt-2">
                   Limpar Filtros
                 </button>
               </motion.div>
@@ -895,16 +929,16 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
 
   const handleConfirmClick = async (e: any) => {
     e.stopPropagation();
+    haptics.impactMedium(); // Haptic on confirm
     if (post.confirmedByMe || confirming) return; // Prevent double confirm
 
     setConfirming(true);
     try {
       await confirmPostValidity(post.id);
-      // Optimistic UI update could be handled by parent state update, 
-      // but AppContext usually refetches or we rely on the returned count update if we wired it up.
-      // For now, simple feedback:
+      haptics.success(); // Success haptic
     } catch (err) {
       console.error(err);
+      haptics.error();
     } finally {
       setConfirming(false);
     }
@@ -954,6 +988,22 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
                 <span className="material-symbols-outlined !text-[18px]">chat_bubble</span>
                 {post.comments ? post.comments.length : 0}
               </button>
+
+              <motion.button
+                whileTap={{ scale: 0.8 }}
+                onClick={(e) => { e.stopPropagation(); onLikeToggle(); }}
+                className={`flex items-center gap-1 text-xs font-medium transition-colors ${post.likedByMe ? 'text-red-500' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <motion.span
+                  initial={false}
+                  animate={{ scale: post.likedByMe ? [1, 1.3, 1] : 1 }}
+                  transition={{ duration: 0.3 }}
+                  className={`material-symbols-outlined !text-[18px] ${post.likedByMe ? 'fill-1' : ''}`}
+                >
+                  {post.likedByMe ? 'favorite' : 'favorite'}
+                </motion.span>
+                {post.likes || 0}
+              </motion.button>
             </div>
           )}
         </div>
