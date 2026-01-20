@@ -205,7 +205,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
 
       // Separate fetch for my status to avoid complex join issues
       let myLikedMap = new Set();
-      let myConfMap = new Set();
+      let myConfMap = new Map<string, string>(); // PostId -> Timestamp
 
       if (user) {
         const { data: myLikes } = await supabase.from('post_likes').select('post_id').eq('user_auth_uid', user.id);
@@ -213,9 +213,18 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
           myLikedMap = new Set(myLikes.map((l: any) => l.post_id));
         }
 
-        const { data: myConfs } = await supabase.from('post_confirmations').select('post_id').eq('confirmer_auth_uid', user.id);
+        const { data: myConfs } = await supabase
+          .from('post_confirmations')
+          .select('post_id, created_at')
+          .eq('confirmer_auth_uid', user.id)
+          .order('created_at', { ascending: true }); // Get all, we want the latest for each post if multiple allowed?
+
+        // If multiple allowed, we map the Latest one.
         if (myConfs) {
-          myConfMap = new Set(myConfs.map((c: any) => c.post_id));
+          myConfs.forEach((c: any) => {
+            // Since we iterate ascending, the last one will overwrite, leaving the latest timestamp.
+            myConfMap.set(c.post_id, c.created_at);
+          });
         }
       }
 
@@ -269,8 +278,10 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
             })(),
             createdAt: p.created_at,
             likes: p.likes?.[0]?.count || 0,
+            confirmations: p.confirmations?.[0]?.count || 0,
             likedByMe: myLikedMap.has(p.id),
             confirmedByMe: myConfMap.has(p.id),
+            myLastConfirmationAt: myConfMap.get(p.id),
             comments: commentsList
           };
         });

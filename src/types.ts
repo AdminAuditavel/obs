@@ -27,8 +27,10 @@ export interface Post {
   timestamp: string;
   createdAt: string;
   likes: number;
+  confirmations?: number;
   likedByMe?: boolean;
   confirmedByMe?: boolean;
+  myLastConfirmationAt?: string;
   comments: Comment[];
   isVerified?: boolean;
 }

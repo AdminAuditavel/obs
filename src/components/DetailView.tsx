@@ -124,21 +124,42 @@ const DetailView = () => {
           Você pode confirmar este relato novamente após 1 hora se a condição persistir.
         </p>
 
-        <button
-          onClick={handleConfirm}
-          disabled={confirming}
-          className={`flex w-full items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg transition-transform ${confirming
-              ? 'bg-gray-400 cursor-not-allowed'
-              : post.confirmedByMe
-                ? 'bg-blue-600 shadow-blue-600/20 active:scale-95' // Visual indicator it's active/re-confirmable logic handles disable? 
-                : 'bg-green-600 shadow-green-600/20 cursor-pointer active:scale-95'
-            }`}
-        >
-          <span className="material-symbols-outlined text-2xl">check_circle</span>
-          <span className="text-base font-bold tracking-tight">
-            {confirming ? 'Confirmando...' : (post.confirmedByMe ? 'Confirmar Novamente' : 'Confirmar Validade')}
-          </span>
-        </button>
+        {(() => {
+          const now = Date.now();
+          const lastConf = post.myLastConfirmationAt ? new Date(post.myLastConfirmationAt).getTime() : 0;
+          const diffHours = (now - lastConf) / (1000 * 60 * 60);
+          const canConfirm = !post.confirmedByMe || diffHours >= 1;
+
+          // If confirmedByMe is true BUT it was < 1 hour ago => Read-Only (Disabled state)
+          // If confirmedByMe is true BUT it was > 1 hour ago => Enabled (Re-confirm state)
+          // If confirming state => disabled
+
+          const isCooldown = post.confirmedByMe && diffHours < 1;
+
+          return (
+            <button
+              onClick={canConfirm ? handleConfirm : undefined}
+              disabled={confirming || isCooldown}
+              className={`flex w-full items-center justify-center overflow-hidden rounded-xl h-14 px-5 text-white gap-3 shadow-lg transition-transform ${isCooldown
+                ? 'bg-gray-400 cursor-not-allowed shadow-none' // Read-only look
+                : confirming
+                  ? 'bg-gray-400 cursor-wait'
+                  : canConfirm && post.confirmedByMe
+                    ? 'bg-blue-600 shadow-blue-600/20 cursor-pointer active:scale-95' // Re-confirm (Actionable)
+                    : 'bg-green-600 shadow-green-600/20 cursor-pointer active:scale-95' // First confirm
+                }`}
+            >
+              <span className="material-symbols-outlined text-2xl">check_circle</span>
+              <span className="text-base font-bold tracking-tight">
+                {confirming
+                  ? 'Confirmando...'
+                  : isCooldown
+                    ? 'Confirmado'
+                    : (post.confirmedByMe ? 'Confirmar Novamente' : 'Confirmar Validade')}
+              </span>
+            </button>
+          );
+        })()}
 
 
         {/* Facepile of commenters - Only show if there are comments */}

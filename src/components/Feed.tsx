@@ -863,14 +863,10 @@ const PostCardWithStatus = ({ post, onClick, onLikeToggle, status }: any) => {
           <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">{post.description}</p>
           {!isOfficial && (
             <div className="flex gap-4 mt-2">
-              <button
-                onClick={handleConfirmClick}
-                disabled={post.confirmedByMe || confirming}
-                className={`flex items-center gap-1 text-xs font-medium transition-colors ${post.confirmedByMe ? 'text-green-600 dark:text-green-400' : 'text-gray-500 hover:text-green-600'}`}
-              >
-                <span className={`material-symbols-outlined !text-[18px] ${post.confirmedByMe ? 'fill-1' : ''}`}>check_circle</span>
-                {confirming ? '...' : (post.confirmations > 0 ? post.confirmations : 'Confirmar')}
-              </button>
+              <div className="flex items-center gap-1 text-xs font-bold text-green-600 dark:text-green-500">
+                <span className="material-symbols-outlined !text-[18px] fill-1">check_circle</span>
+                Confirmado: {post.confirmations}
+              </div>
 
               <button className="flex items-center gap-1 text-gray-500 text-xs font-medium hover:text-gray-700">
                 <span className="material-symbols-outlined !text-[18px]">chat_bubble</span>
