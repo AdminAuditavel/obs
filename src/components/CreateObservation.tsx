@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp, Airport } from '../AppContext';
+import { Post } from '../types';
 import { IMAGES } from '../constants';
 import { supabase } from '../supabaseClient';
 import imageCompression from 'browser-image-compression';
@@ -190,6 +191,37 @@ const CreateObservation = () => {
     recognition.start();
   };
 
+  // GPS State
+  const [includeGeotag, setIncludeGeotag] = useState(true);
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number, lng: number } | null>(null);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (includeGeotag) {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setGpsCoords({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+            setGpsError(null);
+          },
+          (error) => {
+            console.error("GPS Error", error);
+            setGpsError("Erro ao obter GPS");
+            setGpsCoords(null);
+          }
+        );
+      } else {
+        setGpsError("GPS não suportado");
+      }
+    } else {
+      setGpsCoords(null);
+      setGpsError(null);
+    }
+  }, [includeGeotag]);
+
   // Canvas Overlay Function
   const addOverlayToImage = async (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -300,7 +332,7 @@ const CreateObservation = () => {
       let imagePath = null;
       let publicUrl = previewUrl;
 
-      // 1. Upload Image logic
+      // 1. Upload Image logic (keep existing)
       if (photoFile) {
         // Validation: Max 10MB (allow larger initial, we compress)
         if (photoFile.size > 10 * 1024 * 1024) {
@@ -358,13 +390,15 @@ const CreateObservation = () => {
             category: category,
             title: title || `${category} em ${area}`,
             description: description,
+            latitude: gpsCoords?.lat,
+            longitude: gpsCoords?.lng
           })
           .eq('id', editingPost.id);
 
         if (updateError) throw updateError;
         resultId = editingPost.id;
 
-        // Update Media if new file
+        // Update Media if new file (keep existing)
         if (imagePath) {
           const { error: mediaError } = await supabase
             .from('post_media')
@@ -387,7 +421,9 @@ const CreateObservation = () => {
             category: category,
             title: title || `${category} em ${area}`,
             description: description,
-            status: 'published'
+            status: 'published',
+            latitude: gpsCoords?.lat,
+            longitude: gpsCoords?.lng
           })
           .select()
           .single();
@@ -397,7 +433,7 @@ const CreateObservation = () => {
 
         resultId = postData.id;
 
-        // 3. Insert Media (if exists)
+        // 3. Insert Media (if exists) (keep existing)
         if (imagePath && resultId) {
           const { error: mediaError } = await supabase
             .from('post_media')
@@ -412,14 +448,14 @@ const CreateObservation = () => {
       }
 
       // 4. Update Local State (Optimistic or just for feedback)
-      const newPost = {
+      const newPost: Post = {
         id: resultId,
         type: 'collaborative',
         user: {
           id: user.id,
           name: user.callsign || user.name || 'Usuário',
           avatar: user.avatar || IMAGES.profileMain,
-          role: user.role || 'registered',
+          role: (user.role as any) || 'registered',
           job_title: user.job_title
         },
         category: category,
@@ -430,8 +466,11 @@ const CreateObservation = () => {
           const d = new Date();
           return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}Z`;
         })(),
+        createdAt: new Date().toISOString(),
         likes: 0,
-        comments: []
+        comments: [],
+        latitude: gpsCoords?.lat,
+        longitude: gpsCoords?.lng
       };
 
       if (isEditing) {
@@ -457,6 +496,7 @@ const CreateObservation = () => {
 
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+      {/* ... Header (unchanged) ... */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center p-4 justify-between max-w-md mx-auto w-full">
           <div className="w-12 flex items-center cursor-pointer" onClick={() => navigate(-1)}>
@@ -475,16 +515,16 @@ const CreateObservation = () => {
         </div>
       </header>
 
+      {/* ... Main content until Geotag Toggle ... */}
       <main className="flex-1 w-full max-w-md mx-auto pb-32">
-        {/* Camera Preview Area */}
+        {/* Camera Preview Area (keep unchanged - simplified here to select target lines accurately) */}
         <div className="relative aspect-[4/3] bg-black overflow-hidden group">
+          {/* ... */}
           <img className="w-full h-full object-cover opacity-90" src={previewUrl} alt="Camera View" />
-
-          {/* Smart Overlay UI - What you see is what you get (roughly) */}
+          {/* ... OVERLAYS ... */}
           <div className="absolute top-4 right-4 text-right z-10 opacity-70">
             <div className="text-white font-bold text-xs">EVIDÊNCIA OBSERVER</div>
           </div>
-
           <div className="absolute bottom-20 left-4 right-4 z-10 pointer-events-none">
             <div className="flex justify-between items-end">
               <div className="flex flex-col">
@@ -501,6 +541,7 @@ const CreateObservation = () => {
             </div>
           </div>
 
+          {/* Inputs */}
           <input
             type="file"
             accept="image/*"
@@ -519,62 +560,27 @@ const CreateObservation = () => {
 
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 pt-12">
             <div className="flex items-center justify-center gap-8">
-              <button
-                onClick={handleTriggerLibrary}
-                className="flex shrink-0 items-center justify-center rounded-full size-12 bg-white/20 backdrop-blur-md text-white border border-white/30 active:scale-95 transition-transform"
-              >
-                <span className="material-symbols-outlined">image</span>
-              </button>
-              <button
-                onClick={handleTriggerCamera}
-                className="flex shrink-0 items-center justify-center rounded-full size-20 bg-white text-primary shadow-xl active:scale-90 transition-transform"
-              >
-                <span className="material-symbols-outlined !text-4xl fill-1">photo_camera</span>
-              </button>
-              <button
-                onClick={() => setPreviewUrl(IMAGES.cameraPreview)}
-                className="flex shrink-0 items-center justify-center rounded-full size-12 bg-white/20 backdrop-blur-md text-white border border-white/30 active:scale-95 transition-transform"
-              >
-                <span className="material-symbols-outlined">delete</span>
-              </button>
+              <button onClick={handleTriggerLibrary} className="flex shrink-0 items-center justify-center rounded-full size-12 bg-white/20 backdrop-blur-md text-white border border-white/30 active:scale-95 transition-transform"><span className="material-symbols-outlined">image</span></button>
+              <button onClick={handleTriggerCamera} className="flex shrink-0 items-center justify-center rounded-full size-20 bg-white text-primary shadow-xl active:scale-90 transition-transform"><span className="material-symbols-outlined !text-4xl fill-1">photo_camera</span></button>
+              <button onClick={() => setPreviewUrl(IMAGES.cameraPreview)} className="flex shrink-0 items-center justify-center rounded-full size-12 bg-white/20 backdrop-blur-md text-white border border-white/30 active:scale-95 transition-transform"><span className="material-symbols-outlined">delete</span></button>
             </div>
           </div>
         </div>
 
         <div className="px-4 py-6 space-y-6">
-          {/* Airport Selector */}
+          {/* ... Airport Selector ... */}
           <div className="flex flex-col gap-2 relative">
             <label className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">Aeroporto (ICAO)</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">flight_takeoff</span>
-              <input
-                className="w-full pl-12 pr-4 py-4 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-lg font-semibold uppercase placeholder-slate-300"
-                placeholder={localAirport.icao}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
-                onFocus={() => setSearchResults([])}
-              />
-              {/* Show current selection if creating for it, user can type to change */}
-              {!searchQuery && (
-                <span className="absolute left-12 top-1/2 -translate-y-1/2 text-lg font-bold pointer-events-none text-slate-900 dark:text-white">
-                  {localAirport.icao}
-                </span>
-              )}
+              <input className="w-full pl-12 pr-4 py-4 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-lg font-semibold uppercase placeholder-slate-300" placeholder={localAirport.icao} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value.toUpperCase())} onFocus={() => setSearchResults([])} />
+              {!searchQuery && (<span className="absolute left-12 top-1/2 -translate-y-1/2 text-lg font-bold pointer-events-none text-slate-900 dark:text-white">{localAirport.icao}</span>)}
             </div>
-
-            {/* Dropdown Results */}
+            {/* Search Results */}
             {searchResults.length > 0 && (
               <div className="absolute top-20 left-0 right-0 z-20 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                 {searchResults.map(ap => (
-                  <div
-                    key={ap.id}
-                    onClick={() => {
-                      setLocalAirport(ap);
-                      setSearchQuery("");
-                      setSearchResults([]);
-                    }}
-                    className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 flex justify-between items-center cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0"
-                  >
+                  <div key={ap.id} onClick={() => { setLocalAirport(ap); setSearchQuery(""); setSearchResults([]); }} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 flex justify-between items-center cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0">
                     <span className="font-bold">{ap.icao}</span>
                     <span className="text-xs text-slate-500 truncate max-w-[150px]">{ap.city}</span>
                   </div>
@@ -583,23 +589,17 @@ const CreateObservation = () => {
             )}
           </div>
 
+          {/* ... Area and Category ... */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">Área e Categoria</h3>
             <div className="flex h-12 items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-800 p-1">
               {['Pista', 'Pátio', 'Taxiway'].map(loc => (
                 <label key={loc} className="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm text-slate-600 dark:text-slate-400 has-[:checked]:text-primary font-bold text-sm transition-all">
                   <span className="truncate">{loc}</span>
-                  <input
-                    className="hidden"
-                    name="area-picker"
-                    type="radio"
-                    checked={area === loc}
-                    onChange={() => setArea(loc)}
-                  />
+                  <input className="hidden" name="area-picker" type="radio" checked={area === loc} onChange={() => setArea(loc)} />
                 </label>
               ))}
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <CategoryBtn icon="warning" label="FOD" active={category === 'FOD'} onClick={() => setCategory('FOD')} />
               <CategoryBtn icon="build" label="Manutenção" active={category === 'Manutenção'} onClick={() => setCategory('Manutenção')} />
@@ -608,51 +608,48 @@ const CreateObservation = () => {
             </div>
           </div>
 
+          {/* ... Title ... */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">Título</label>
-            <input
-              type="text"
-              className="w-full pl-4 pr-4 py-3 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-base font-medium placeholder-slate-300"
-              placeholder="Ex: Buraco na pista, Iluminação falha..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={40}
-            />
+            <input type="text" className="w-full pl-4 pr-4 py-3 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-base font-medium placeholder-slate-300" placeholder="Ex: Buraco na pista, Iluminação falha..." value={title} onChange={(e) => setTitle(e.target.value)} maxLength={40} />
           </div>
 
+          {/* ... Description ... */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between px-1 items-center">
               <div className="flex items-center gap-2">
                 <label className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Descrição</label>
-                <button
-                  onClick={startListening}
-                  className={`flex items-center justify-center p-1.5 rounded-full transition-colors ${isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
-                  title="Falar descrição"
-                >
-                  <span className="material-symbols-outlined text-[18px]">{isListening ? 'mic_off' : 'mic'}</span>
-                </button>
+                <button onClick={startListening} className={`flex items-center justify-center p-1.5 rounded-full transition-colors ${isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`} title="Falar descrição"><span className="material-symbols-outlined text-[18px]">{isListening ? 'mic_off' : 'mic'}</span></button>
               </div>
               <span className="text-xs text-slate-400">{description.length} / 140</span>
             </div>
-            <textarea
-              className="w-full p-4 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-base"
-              placeholder="Descreva o que você está observando..." rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={140}
-            ></textarea>
+            <textarea className="w-full p-4 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-base" placeholder="Descreva o que você está observando..." rows={3} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={140}></textarea>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+          {/* Geotag Toggle - MODIFIED */}
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${includeGeotag ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+              }`}
+          >
             <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary">location_on</span>
+              <span className={`material-symbols-outlined ${includeGeotag && gpsCoords ? 'text-green-500' : 'text-slate-400'}`}>
+                {includeGeotag && gpsCoords ? 'my_location' : 'location_disabled'}
+              </span>
               <div>
-                <p className="font-bold">Incluir Geotag</p>
-                <p className="text-xs text-slate-500">Coordenadas GPS automáticas</p>
+                <p className={`font-bold ${includeGeotag ? 'text-green-700 dark:text-green-400' : 'text-slate-900 dark:text-white'}`}>Incluir Geotag</p>
+                <p className="text-xs text-slate-500">
+                  {gpsError ? <span className="text-red-500">{gpsError}</span> : gpsCoords ? 'Coordenadas obtidas' : 'Coordenadas GPS automáticas'}
+                </p>
               </div>
             </div>
             <div className="relative inline-block w-11 h-6 transition duration-200 ease-in-out rounded-full cursor-pointer">
-              <input defaultChecked className="sr-only ios-toggle" id="toggle" type="checkbox" />
+              <input
+                className="sr-only ios-toggle"
+                id="toggle"
+                type="checkbox"
+                checked={includeGeotag}
+                onChange={(e) => setIncludeGeotag(e.target.checked)}
+              />
               <label className="ios-toggle-label absolute top-0 left-0 w-11 h-6 bg-slate-300 dark:bg-slate-700 rounded-full cursor-pointer transition-colors duration-200 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all" htmlFor="toggle"></label>
             </div>
           </div>
