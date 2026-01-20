@@ -183,7 +183,7 @@ const DetailView = () => {
                     key={u.id}
                     className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a212e] bg-cover bg-center"
                     style={{ backgroundImage: `url('${u.avatar || IMAGES.avatar1}')` }}
-                    title={u.name}
+                    title={u.callsign || u.name}
                   ></div>
                 ))}
 
@@ -195,7 +195,7 @@ const DetailView = () => {
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                 {uniqueCommenters.length === 1
-                  ? `${uniqueCommenters[0].name.split(' ')[0]} comentou isso`
+                  ? `${(uniqueCommenters[0].callsign || uniqueCommenters[0].name).split(' ')[0]} comentou isso`
                   : `Outros pilotos comentaram`}
               </p>
             </div>
@@ -215,7 +215,7 @@ const DetailView = () => {
             <div className="h-10 w-10 rounded-full bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${comment.user.avatar}')` }}></div>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold">{comment.user.name}</span>
+                <span className="text-sm font-bold">{comment.user.callsign || comment.user.name}</span>
                 <span className="text-[10px] text-gray-400">{comment.timestamp}</span>
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300">{comment.text}</p>

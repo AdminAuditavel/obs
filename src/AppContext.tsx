@@ -167,7 +167,10 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
              user:user_profiles!author_auth_uid (
                 auth_uid,
                 full_name,
-                avatar_url
+                avatar_url,
+                callsign,
+                job_title
+             )
              )
           ),
           likes:post_likes (count),
@@ -480,7 +483,9 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
         user: {
           id: data.user.id,
           name: data.user.name,
-          avatar: data.user.avatar || IMAGES.profileMain
+          avatar: data.user.avatar || IMAGES.profileMain,
+          callsign: user?.callsign,
+          job_title: user?.job_title
         }
       };
 
