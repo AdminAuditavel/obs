@@ -19,51 +19,81 @@ Deno.serve(async (req) => {
     const station = icao.toUpperCase();
     console.log(`Fetching weather for ${station}`);
 
-    let metarData = null;
+    let metarData: any = null;
+    let tafData: string | null = null;
 
     // 1. Try REDEMET (Best for Brazil)
-    // Note: User must set REDEMET_API_KEY secret in Supabase Dashboard
     const redemetKey = Deno.env.get('REDEMET_API_KEY');
     
-    if (redemetKey && station.startsWith('S')) { // Optimize: only try Redemet for South American codes usually? Or just always if key exists?
+    if (redemetKey && station.startsWith('S')) {
       try {
         console.log('Attempting REDEMET...');
         const date = new Date().toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
-        const url = `https://api-redemet.decea.mil.br/mensagens/metar/${station}?api_key=${redemetKey}`;
         
-        const res = await fetch(url);
-        if (res.ok) {
-           const json = await res.json();
-           // REDEMET Response Structure: { data: { data: [ { id_localidade: "SBCT", mens: "METAR..." } ] } }
+        // Parallel Fetch for METAR and TAF
+        const [metarRes, tafRes] = await Promise.all([
+          fetch(`https://api-redemet.decea.mil.br/mensagens/metar/${station}?api_key=${redemetKey}`),
+          fetch(`https://api-redemet.decea.mil.br/mensagens/taf/${station}?api_key=${redemetKey}`)
+        ]);
+
+        // Process METAR
+        if (metarRes.ok) {
+           const json = await metarRes.json();
            if (json.data && json.data.data && json.data.data.length > 0) {
              const messages = json.data.data;
-             // Sort by validade_inicial desc (latest first) to capture latest SPECI or METAR
              messages.sort((a: any, b: any) => {
                  const dateA = new Date(a.validade_inicial).getTime();
                  const dateB = new Date(b.validade_inicial).getTime();
                  return dateB - dateA;
              });
-
              const msg = messages[0].mens;
-             // Parse basic info from raw string since Redemet doesn't give parsed fields
              metarData = parseMetar(msg, station);
-             console.log('REDEMET success');
+             console.log('REDEMET METAR success');
            }
         }
+
+        // Process TAF
+        if (tafRes.ok) {
+          const json = await tafRes.json();
+          if (json.data && json.data.data && json.data.data.length > 0) {
+             // TAF response structure similar to METAR
+             const messages = json.data.data;
+             // Sort by validity to get latest
+             messages.sort((a: any, b: any) => {
+                 const dateA = new Date(a.validade_inicial).getTime();
+                 const dateB = new Date(b.validade_inicial).getTime();
+                 return dateB - dateA;
+             });
+             tafData = messages[0].mens; // Raw TAF
+             console.log('REDEMET TAF success');
+          }
+        }
+
       } catch (err) {
         console.error('REDEMET failed:', err);
       }
     }
 
     // 2. Fallback to AviationWeather.gov (Global, Open)
+    // We use this if REDEMET failed to get METAR, OR if we are not using REDEMET (international).
+    // If we have METAR from Redemet but no TAF, we might want to try AviationWeather for TAF only? 
+    // Usually Redemet has TAF if it has METAR. Let's keep logic simple: if no METAR yet, try AW for everything.
+    
     if (!metarData) {
        console.log('Attempting AviationWeather.gov...');
        try {
-         // New API format
-         const url = `https://aviationweather.gov/api/data/metar?ids=${station}&format=json`;
-         const res = await fetch(url);
-         if (res.ok) {
-           const json = await res.json();
+         // Fetch METAR
+         const metarUrl = `https://aviationweather.gov/api/data/metar?ids=${station}&format=json`;
+         // Fetch TAF
+         const tafUrl = `https://aviationweather.gov/api/data/taf?ids=${station}&format=json`;
+
+         const [metarRes, tafRes] = await Promise.all([
+           fetch(metarUrl),
+           fetch(tafUrl)
+         ]);
+
+         if (metarRes.ok) {
+           const json = await metarRes.json();
            if (json && json.length > 0) {
               const d = json[0];
               metarData = {
@@ -80,22 +110,34 @@ Deno.serve(async (req) => {
               };
            }
          }
+
+         if (tafRes.ok) {
+           const json = await tafRes.json();
+           if (json && json.length > 0) {
+             tafData = json[0].rawOb || json[0].rawTAF; // Check API field name
+           }
+         }
+
        } catch (err) {
          console.error('AviationWeather failed:', err);
        }
     }
 
     if (!metarData) {
-      // Final fallback attempting NOAA text if JSON fails? No, let's just return null/error.
       return new Response(
         JSON.stringify({ error: 'Weather data not found' }),
         { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
 
+    // Append TAF to data
+    if (tafData) {
+      metarData.taf = tafData;
+    }
+
     // Return Data
     return new Response(
-      JSON.stringify([metarData]), // Return as array to match service expectation or just object? Service expects data[0]
+      JSON.stringify([metarData]),
       { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
 

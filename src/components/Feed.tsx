@@ -60,6 +60,7 @@ const Feed = () => {
   // Time State
   const [timeZ, setTimeZ] = useState("");
   const [metar, setMetar] = useState<string | null>(null);
+  const [taf, setTaf] = useState<string | null>(null);
   const [flightCategory, setFlightCategory] = useState<string | null>(null);
   const [isLoadingMetar, setIsLoadingMetar] = useState(false);
 
@@ -82,12 +83,14 @@ const Feed = () => {
 
       setIsLoadingMetar(true);
       setMetar(null); // Reset while loading
+      setTaf(null);
       setFlightCategory(null);
 
       try {
         const data = await getWeather(selectedAirport.icao);
         if (data && data.raw) {
           setMetar(data.raw);
+          setTaf(data.taf || null);
           setFlightCategory(data.flight_category || null);
         } else {
           setMetar("METAR não disponível no momento.");
@@ -347,8 +350,18 @@ const Feed = () => {
                 )}
               </div>
 
+
               {metar && !isLoadingMetar && (
                 <WeatherBadgesGrid rawMetar={metar} />
+              )}
+
+              {taf && !isLoadingMetar && (
+                <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-3 border border-blue-100 dark:border-blue-900/30 mb-3">
+                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Previsão (TAF)</p>
+                  <p className="text-gray-600 dark:text-gray-300 font-mono text-[10px] leading-relaxed break-all">
+                    {taf}
+                  </p>
+                </div>
               )}
 
               <button onClick={() => navigate(user ? '/official' : '/onboarding')} className="flex w-full cursor-pointer items-center justify-center rounded-lg h-10 bg-primary text-white text-sm font-bold gap-2 active:scale-95 transition-transform">

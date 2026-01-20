@@ -8,6 +8,7 @@ const OfficialDetails = () => {
   const navigate = useNavigate();
   const { selectedAirport } = useApp();
   const [metar, setMetar] = useState<string | null>(null);
+  const [taf, setTaf] = useState<string | null>(null);
   const [decoded, setDecoded] = useState<ParsedMetar | null>(null);
   const [obsTime, setObsTime] = useState<string>('');
   const [fetchTime, setFetchTime] = useState<string>('');
@@ -23,6 +24,7 @@ const OfficialDetails = () => {
         const data = await getWeather(selectedAirport.icao);
         if (data && data.raw) {
           setMetar(data.raw);
+          setTaf(data.taf || null);
           setDecoded(parseMetar(data.raw));
 
           // Parse Time
@@ -115,6 +117,17 @@ const OfficialDetails = () => {
         </div>
 
         <div className="flex flex-col mt-2">
+          {taf && (
+            <>
+              <h3 className="text-lg font-bold leading-tight tracking-tight px-4 pb-2 pt-4">Previsão (TAF)</h3>
+              <div className="px-4">
+                <div className="bg-gray-50 dark:bg-background-dark/50 rounded-xl border border-[#cdd7ea] dark:border-gray-800 p-4">
+                  <p className="font-mono text-xs leading-relaxed text-gray-700 dark:text-gray-300 break-all">{taf}</p>
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="flex items-center justify-between px-4 pb-2 pt-4">
             <h3 className="text-lg font-bold leading-tight tracking-tight">NOTAMs Ativos</h3>
             <span className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">3 Mensagens</span>

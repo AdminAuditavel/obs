@@ -11,6 +11,7 @@ export interface MetarData {
   wind_speed_kt?: number;
   altim_in_hg?: number;
   flight_category?: string;
+  taf?: string;
 }
 
 const calculateFlightCategory = (raw: string): string => {
@@ -76,7 +77,8 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
           temp_c: d.temp || d.temp_c,
           // Support multiple potential key formats from checkwx/aviationweather
           wind_dir_degrees: d.wdir ?? d.wind_dir_degrees ?? d.wind_dir,
-          wind_speed_kt: d.wspd ?? d.wind_speed_kt ?? d.wind_speed
+          wind_speed_kt: d.wspd ?? d.wind_speed_kt ?? d.wind_speed,
+          taf: d.rawTaf || d.taf
       };
 
       // Patch category if missing
