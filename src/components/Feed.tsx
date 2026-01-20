@@ -10,6 +10,7 @@ import { Airport } from '../AppContext';
 import { getWeather } from '../services/weatherService';
 import { UserBadge } from './UserBadge';
 import { parseMetar } from '../utils/metarParser';
+import { TimeTimeline } from './TimeTimeline';
 const Feed = () => {
   const navigate = useNavigate();
   const { posts, user, selectedAirport, setSelectedAirport, favoriteAirports, toggleFavorite, toggleLike, fetchPosts } = useApp();
@@ -150,6 +151,17 @@ const Feed = () => {
   // Time Filter State
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
+  const displayHour = React.useMemo(() => {
+    return selectedTime ? new Date(selectedTime).getHours() : new Date().getHours();
+  }, [selectedTime]);
+
+  const isFuture = React.useMemo(() => {
+    if (!selectedTime) return false;
+    const now = new Date();
+    const sel = new Date(selectedTime);
+    return sel > now;
+  }, [selectedTime]);
+
   // helper for decay
   const getPostAgeStatus = (createdAt: string) => {
     // If no createdAt (e.g. legacy mocks), fallback to safe default
@@ -197,7 +209,8 @@ const Feed = () => {
 
     // 3. Filter by Time (if selected)
     if (selectedTime) {
-      const selectedHour = parseInt(selectedTime); // e.g., "10" from "10Z"
+      const selectedDate = new Date(selectedTime);
+      const selectedUTCHour = selectedDate.getUTCHours();
       let postHour = -1;
 
       if (post.timestamp.toLowerCase().includes('ago') || post.timestamp.toLowerCase().includes('atrás') || post.timestamp.toLowerCase().includes('há')) {
@@ -211,7 +224,7 @@ const Feed = () => {
         postHour = parseInt(post.timestamp.split(':')[0]);
       }
 
-      if (postHour !== selectedHour) return false;
+      if (postHour !== selectedUTCHour) return false;
     }
 
     return true;
@@ -225,9 +238,8 @@ const Feed = () => {
         <div className="absolute inset-0">
           <img
             src={(() => {
-              const hour = new Date().getHours();
-              if (hour >= 6 && hour < 9) return '/header-bg-sunrise.png';
-              if (hour >= 9 && hour < 17) return '/header-bg-day.png';
+              if (displayHour >= 6 && displayHour < 9) return '/header-bg-sunrise.png';
+              if (displayHour >= 9 && displayHour < 17) return '/header-bg-day.png';
               return '/header-bg-sunset.png';
             })()}
             alt="Airport Background"
@@ -346,64 +358,82 @@ const Feed = () => {
 
       <main className="flex-1 pb-32 relative z-30">
         {/* Official Summary Card */}
+        {/* Official Summary Card (Conditional TAF or METAR) */}
         <div className="p-4">
-          <div className="flex flex-col items-stretch justify-start rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2233] overflow-hidden">
-            <div className="p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
-                  <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
-                  {metar && (
-                    <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${parseMetar(metar).type === 'SPECI'
-                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-                      }`}>
-                      {parseMetar(metar).type}
-                    </span>
-                  )}
-                  {sunTimes && (
-                    <div className="flex items-center gap-2 ml-2 border-l border-gray-200 dark:border-gray-700 pl-2">
-                      <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                        <span className="material-symbols-outlined !text-[14px] text-amber-500">wb_twilight</span>
-                        {sunTimes.sunrise}
+          {isFuture && taf ? (
+            <div className="flex flex-col items-stretch justify-start rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900 bg-white dark:bg-[#1a2233] overflow-hidden border-l-4 border-l-indigo-500 animate-in fade-in slide-in-from-bottom-4">
+              <div className="p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-indigo-500 !text-[20px]">calendar_clock</span>
+                    <p className="text-indigo-900 dark:text-indigo-100 text-sm font-bold uppercase tracking-wider">Previsão TAF</p>
+                  </div>
+                </div>
+                <div className="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800/30 min-h-[60px] flex items-center">
+                  <p className="text-gray-700 dark:text-gray-300 font-mono text-xs leading-relaxed break-all">
+                    {taf}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-stretch justify-start rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2233] overflow-hidden">
+              <div className="p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
+                    {metar && (
+                      <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${parseMetar(metar).type === 'SPECI'
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                        }`}>
+                        {parseMetar(metar).type}
+                      </span>
+                    )}
+                    {sunTimes && (
+                      <div className="flex items-center gap-2 ml-2 border-l border-gray-200 dark:border-gray-700 pl-2">
+                        <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                          <span className="material-symbols-outlined !text-[14px] text-amber-500">wb_twilight</span>
+                          {sunTimes.sunrise}
+                        </div>
+                        <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                          <span className="material-symbols-outlined !text-[14px] text-orange-400">wb_twilight</span>
+                          {sunTimes.sunset}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                        <span className="material-symbols-outlined !text-[14px] text-orange-400">wb_twilight</span>
-                        {sunTimes.sunset}
-                      </div>
+                    )}
+                  </div>
+                  {/* <p className="text-primary text-sm font-mono font-bold">{timeZ}</p> */}
+                  <FlightCategoryBadge category={flightCategory} />
+                </div>
+
+                <div className="bg-gray-50 dark:bg-background-dark/50 rounded-lg p-3 border border-gray-100 dark:border-gray-800 min-h-[60px] flex items-center mb-3">
+                  {isLoadingMetar ? (
+                    <div className="flex items-center gap-2 text-gray-400 text-xs animate-pulse">
+                      <span className="material-symbols-outlined !text-[16px] animate-spin">sync</span>
+                      <span>Atualizando dados...</span>
                     </div>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-300 font-mono text-xs leading-relaxed break-all">
+                      {metar || "Aguardando dados..."}
+                    </p>
                   )}
                 </div>
-                {/* <p className="text-primary text-sm font-mono font-bold">{timeZ}</p> */}
-                <FlightCategoryBadge category={flightCategory} />
-              </div>
 
-              <div className="bg-gray-50 dark:bg-background-dark/50 rounded-lg p-3 border border-gray-100 dark:border-gray-800 min-h-[60px] flex items-center mb-3">
-                {isLoadingMetar ? (
-                  <div className="flex items-center gap-2 text-gray-400 text-xs animate-pulse">
-                    <span className="material-symbols-outlined !text-[16px] animate-spin">sync</span>
-                    <span>Atualizando dados...</span>
-                  </div>
-                ) : (
-                  <p className="text-gray-600 dark:text-gray-300 font-mono text-xs leading-relaxed break-all">
-                    {metar || "Aguardando dados..."}
-                  </p>
+
+                {metar && !isLoadingMetar && (
+                  <WeatherBadgesGrid rawMetar={metar} />
                 )}
+
+
+                <button onClick={() => navigate(user ? '/official' : '/onboarding')} className="flex w-full cursor-pointer items-center justify-center rounded-lg h-10 bg-primary text-white text-sm font-bold gap-2 active:scale-95 transition-transform">
+                  <span className="truncate">Detalhar Condições</span>
+                  <span className="material-symbols-outlined !text-[18px]">arrow_forward</span>
+                </button>
               </div>
-
-
-              {metar && !isLoadingMetar && (
-                <WeatherBadgesGrid rawMetar={metar} />
-              )}
-
-
-
-              <button onClick={() => navigate(user ? '/official' : '/onboarding')} className="flex w-full cursor-pointer items-center justify-center rounded-lg h-10 bg-primary text-white text-sm font-bold gap-2 active:scale-95 transition-transform">
-                <span className="truncate">Detalhar Condições</span>
-                <span className="material-symbols-outlined !text-[18px]">arrow_forward</span>
-              </button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Feed Section */}
