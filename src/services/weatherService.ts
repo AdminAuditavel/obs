@@ -87,9 +87,12 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
       }
 
       // ENRICHMENT: If TAF is missing from Edge Function, try client-side fallback
+      // We use a CORS Proxy (allorigins) because calling AviationWeather directly from browser often fails CORS.
       if (!result.taf) {
          try {
-           const tafResponse = await fetch(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`);
+           const targetUrl = encodeURIComponent(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`);
+           const tafResponse = await fetch(`https://api.allorigins.win/raw?url=${targetUrl}`);
+           
            if (tafResponse.ok) {
              const tafJson = await tafResponse.json();
              if (tafJson && Array.isArray(tafJson) && tafJson.length > 0) {
@@ -97,7 +100,7 @@ export const getWeather = async (icao: string): Promise<MetarData | null> => {
              }
            }
          } catch (enrichErr) {
-           console.warn('Failed to enrich TAF:', enrichErr);
+           console.warn('Failed to enrich TAF (Proxy):', enrichErr);
          }
       }
       
