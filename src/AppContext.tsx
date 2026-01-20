@@ -71,7 +71,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
   }, [selectedAirport]);
 
   useEffect(() => {
-    // Check active session
+    // Check active session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         fetchProfile(session.user.id, session.user.email);
@@ -81,6 +81,10 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
+        // Only fetch profile if user ID changed or we don't have one? 
+        // Actually, fetching profile is safe.
+        // But we need to distinguish login event vs token refresh? 
+        // For simplicity, just fetch.
         fetchProfile(session.user.id, session.user.email);
         fetchFavorites(session.user.id);
       } else {
@@ -89,10 +93,13 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
       }
     });
 
-    fetchPosts();
-
     return () => subscription.unsubscribe();
-  }, [selectedAirport]); // Refetch when airport changes
+  }, []); // Run auth listener setup once
+
+  // Fetch posts when dependencies change
+  useEffect(() => {
+    fetchPosts();
+  }, [selectedAirport, user?.id]); // Refetch when airport or user changes (to update confirmedByMe statuses)
 
   const fetchFavorites = async (uid: string) => {
     try {
