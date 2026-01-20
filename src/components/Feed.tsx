@@ -88,8 +88,9 @@ const Feed = () => {
 
       try {
         const data = await getWeather(selectedAirport.icao);
-        if (data && data.raw) {
-          setMetar(data.raw);
+        if (data) {
+          setMetar(data.raw || "METAR não disponível.");
+          // Explicitly set TAF if available, otherwise null.
           setTaf(data.taf || null);
           setFlightCategory(data.flight_category || null);
         } else {
