@@ -418,6 +418,20 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
     if (!user) return;
     const { data, error } = await supabase.rpc('confirm_post', { p_post_id: postId });
     if (error) throw error;
+
+    // Update local state immediately so UI reflects change without refetch
+    setPosts(prev => prev.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          confirmations: data.new_count, // Use server returned count
+          confirmedByMe: true,
+          myLastConfirmationAt: new Date().toISOString() // Set current time for cooldown logic
+        };
+      }
+      return post;
+    }));
+
     return data;
   };
 
