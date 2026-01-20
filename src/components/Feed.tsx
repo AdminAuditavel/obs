@@ -239,11 +239,44 @@ const Feed = () => {
 
         {/* Top Floating Bar */}
         <div className="absolute top-0 left-0 right-0 z-50 px-4 py-6 flex justify-between items-start">
-          {/* Top Left: ICAO */}
-          <div className="bg-black/30 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
-            <span className="text-white font-mono font-bold text-xs tracking-wider">
-              {selectedAirport.icao}
-            </span>
+          {/* Top Left: ICAO & Weather */}
+          <div className="flex flex-col items-start gap-2">
+            <div className="bg-black/30 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
+              <span className="text-white font-mono font-bold text-xs tracking-wider">
+                {selectedAirport.icao}
+              </span>
+            </div>
+
+            {/* Present Weather Badge */}
+            {(() => {
+              if (!metar) return null;
+              const parsed = parseMetar(metar);
+              const cond = parsed.condition;
+              // Filter non-significant weather
+              if (!cond || cond === 'N/A' || cond === 'NSW' || cond === 'No Wx' || cond.includes('CAVOK')) return null;
+
+              const getIcon = (c: string) => {
+                if (c.includes('TS')) return 'thunderstorm';
+                if (c.includes('SH')) return 'rainy';
+                if (c.includes('RA')) return 'rainy';
+                if (c.includes('DZ')) return 'rainy_light';
+                if (c.includes('SN') || c.includes('SG')) return 'weather_snowy';
+                if (c.includes('GR') || c.includes('GS')) return 'weather_hail';
+                if (c.includes('FG') || c.includes('BR')) return 'foggy';
+                if (c.includes('HZ') || c.includes('FU') || c.includes('VA')) return 'dehaze';
+                if (c.includes('SQ') || c.includes('FC') || c.includes('SS')) return 'cyclone';
+                return 'cloud';
+              };
+
+              return (
+                <div className="bg-black/30 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-left-2 transition-all">
+                  <span className="material-symbols-outlined text-amber-400 !text-[16px] drop-shadow-md">{getIcon(cond)}</span>
+                  <span className="text-white text-xs font-medium drop-shadow-md capitalize">
+                    {parsed.tooltips.condition}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Top Right: Search */}
