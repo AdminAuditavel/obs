@@ -79,8 +79,29 @@ Deno.serve(async (req) => {
     // If we have METAR from Redemet but no TAF, we might want to try AviationWeather for TAF only? 
     // Usually Redemet has TAF if it has METAR. Let's keep logic simple: if no METAR yet, try AW for everything.
     
+    }
+
+    // 3. Fallback for TAF (If METAR found but TAF missing)
+    if (metarData && !tafData) {
+       console.log('METAR found but TAF missing. Attempting AviationWeather for TAF...');
+       try {
+         const tafUrl = `https://aviationweather.gov/api/data/taf?ids=${station}&format=json`;
+         const tafRes = await fetch(tafUrl);
+         if (tafRes.ok) {
+            const json = await tafRes.json();
+            if (json && json.length > 0) {
+              tafData = json[0].rawOb || json[0].rawTAF;
+              console.log('TAF fetched from AviationWeather fallback');
+            }
+         }
+       } catch (err) {
+         console.warn('TAF Fallback failed:', err);
+       }
+    }
+
+    // 2. Fallback to AviationWeather.gov (Global, Open) - Full Fallback if NO METAR
     if (!metarData) {
-       console.log('Attempting AviationWeather.gov...');
+       console.log('Attempting AviationWeather.gov (Full)...');
        try {
          // Fetch METAR
          const metarUrl = `https://aviationweather.gov/api/data/metar?ids=${station}&format=json`;
