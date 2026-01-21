@@ -8,7 +8,7 @@ const SplashScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/feed');
-    }, 2500);
+    }, 3500);
     return () => clearTimeout(timer);
   }, [navigate]);
 
@@ -36,15 +36,14 @@ const SplashScreen = () => {
           </svg>
         </div>
 
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-2 max-w-[300px] text-center">
           <p className="text-[#0c121d] dark:text-slate-300 text-sm font-semibold tracking-wide uppercase">
             Autenticando
           </p>
-          <div className="flex gap-1">
-            <div className="w-1 h-1 bg-primary rounded-full"></div>
-            <div className="w-1 h-1 bg-primary/40 rounded-full"></div>
-            <div className="w-1 h-1 bg-primary/20 rounded-full"></div>
-          </div>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-tight">
+            Informação complementar. Não substitui briefings oficiais.<br />
+            O piloto em comando é a autoridade final.
+          </p>
         </div>
       </div>
 
