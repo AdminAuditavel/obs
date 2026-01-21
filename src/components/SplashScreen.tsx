@@ -40,7 +40,7 @@ const SplashScreen = () => {
           <p className="text-[#0c121d] dark:text-slate-300 text-sm font-semibold tracking-wide uppercase">
             Autenticando
           </p>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-tight">
+          <p className="text-[11px] text-gray-600 dark:text-gray-300 font-semibold leading-tight px-4 opacity-90">
             Informação complementar. Não substitui briefings oficiais.<br />
             O piloto em comando é a autoridade final.
           </p>

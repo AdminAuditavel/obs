@@ -94,6 +94,11 @@ const Login = () => {
                     </button>
                 </form>
             </div>
+            <div className="p-6 pb-8 text-center">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-tight max-w-[280px] mx-auto">
+                    Informação complementar. Não substitui briefings oficiais. O piloto em comando é a autoridade final.
+                </p>
+            </div>
         </div>
     );
 };
