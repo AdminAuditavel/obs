@@ -13,14 +13,18 @@ const SplashScreen = () => {
   }, [navigate]);
 
   return (
-    <div className="relative flex h-screen w-full flex-col items-center justify-between overflow-hidden px-6 py-12 bg-brand-neutral dark:bg-background-dark font-display antialiased">
-      <div className="h-10"></div>
+    <div className="relative flex h-screen w-full flex-col items-center justify-between overflow-hidden px-6 py-8 bg-brand-neutral dark:bg-background-dark font-display antialiased">
+      <div className="h-10 flex items-end justify-center pb-2">
+        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-tight text-center px-4 max-w-[300px]">
+          Informação complementar. Não substitui briefings oficiais. O piloto em comando é a autoridade final.
+        </p>
+      </div>
 
       <div className="flex flex-col items-center justify-center gap-8 w-full max-w-[375px]">
         <div className="relative flex items-center justify-center w-full px-4">
           <img src="/full-logo.png" alt="Observer" className="w-full max-w-[280px] h-auto object-contain" />
         </div>
-        <p className="text-[#4a5568] dark:text-slate-400 text-base font-medium leading-relaxed max-w-[280px] mx-auto">
+        <p className="text-[#4a5568] dark:text-slate-400 text-base font-medium leading-relaxed max-w-[280px] mx-auto text-center">
           Consciência situacional colaborativa
         </p>
       </div>
@@ -39,10 +43,6 @@ const SplashScreen = () => {
         <div className="flex flex-col items-center gap-2 max-w-[300px] text-center">
           <p className="text-[#0c121d] dark:text-slate-300 text-sm font-semibold tracking-wide uppercase">
             Autenticando
-          </p>
-          <p className="text-[11px] text-gray-600 dark:text-gray-300 font-semibold leading-tight px-4 opacity-90">
-            Informação complementar. Não substitui briefings oficiais.<br />
-            O piloto em comando é a autoridade final.
           </p>
         </div>
       </div>
