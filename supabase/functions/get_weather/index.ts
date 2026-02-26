@@ -66,8 +66,6 @@ Deno.serve(async (req) => {
     // We use this if REDEMET failed to get METAR, OR if we are not using REDEMET (international).
     // If we have METAR from Redemet but no TAF, we might want to try AviationWeather for TAF only? 
     // Usually Redemet has TAF if it has METAR. Let's keep logic simple: if no METAR yet, try AW for everything.
-    
-    }
 
     // 3. Fallback for TAF (If METAR found but TAF missing)
     if (metarData && !tafData) {
