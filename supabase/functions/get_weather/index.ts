@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
         console.log('Attempting REDEMET...');
         const date = new Date().toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
         
-        // Parallel Fetch for METAR and TAF
+        // Parallel Fetch for METAR and TAF using new API Key format
         const [metarRes, tafRes] = await Promise.all([
           fetch(`https://api-redemet.decea.mil.br/mensagens/metar/${station}?api_key=${redemetKey}`),
           fetch(`https://api-redemet.decea.mil.br/mensagens/taf/${station}?api_key=${redemetKey}`)
@@ -39,14 +39,9 @@ Deno.serve(async (req) => {
         // Process METAR
         if (metarRes.ok) {
            const json = await metarRes.json();
-           if (json.data && json.data.data && json.data.data.length > 0) {
+           if (json.status && json.data && json.data.data && json.data.data.length > 0) {
              const messages = json.data.data;
-             messages.sort((a: any, b: any) => {
-                 const dateA = new Date(a.validade_inicial).getTime();
-                 const dateB = new Date(b.validade_inicial).getTime();
-                 return dateB - dateA;
-             });
-             const msg = messages[0].mens;
+             const msg = messages[0].mens; // Top message
              metarData = parseMetar(msg, station);
              console.log('REDEMET METAR success');
            }
@@ -55,15 +50,8 @@ Deno.serve(async (req) => {
         // Process TAF
         if (tafRes.ok) {
           const json = await tafRes.json();
-          if (json.data && json.data.data && json.data.data.length > 0) {
-             // TAF response structure similar to METAR
+          if (json.status && json.data && json.data.data && json.data.data.length > 0) {
              const messages = json.data.data;
-             // Sort by validity to get latest
-             messages.sort((a: any, b: any) => {
-                 const dateA = new Date(a.validade_inicial).getTime();
-                 const dateB = new Date(b.validade_inicial).getTime();
-                 return dateB - dateA;
-             });
              tafData = messages[0].mens; // Raw TAF
              console.log('REDEMET TAF success');
           }

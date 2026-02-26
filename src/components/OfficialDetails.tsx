@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { getWeather } from '../services/weatherService';
+import { getAiswebData } from '../services/aiswebService';
 import { parseMetar, ParsedMetar } from '../utils/metarParser';
 
 const OfficialDetails = () => {
@@ -13,6 +14,8 @@ const OfficialDetails = () => {
   const [obsTime, setObsTime] = useState<string>('');
   const [fetchTime, setFetchTime] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [notams, setNotams] = useState<any[]>([]);
+  const [notamLoading, setNotamLoading] = useState(false);
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -27,7 +30,6 @@ const OfficialDetails = () => {
           setTaf(data.taf || null);
           setDecoded(parseMetar(data.raw));
 
-          // Parse Time
           if (data.observation_time) {
             const d = new Date(data.observation_time);
             setObsTime(`${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}Z`);
@@ -42,14 +44,43 @@ const OfficialDetails = () => {
       }
     };
 
+    const fetchNotams = async () => {
+      setNotamLoading(true);
+      try {
+        const xmlString = await getAiswebData(selectedAirport.icao, 'notam');
+        if (xmlString) {
+          // Simplified parsing of AISWEB NOTAM XML
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+          const notamNodes = xmlDoc.querySelectorAll('notam item');
+
+          const parsedNotams = Array.from(notamNodes).map(node => {
+            const num = node.querySelector('numero')?.textContent || '';
+            const id = node.getAttribute('id') || num;
+            const e = node.querySelector('e')?.textContent || ''; // text of NOTAM
+            return { id, text: e, category: 'Aviso' };
+          });
+
+          setNotams(parsedNotams);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notams", err);
+      } finally {
+        setNotamLoading(false);
+      }
+    };
+
     if (selectedAirport) {
       fetchWeather();
+      if (selectedAirport.icao.startsWith('S') || selectedAirport.country_code === 'BR') {
+        fetchNotams();
+      }
     }
   }, [selectedAirport]);
 
   const getSourceUrl = () => {
     if (!selectedAirport) return '#';
-    if (selectedAirport.country_code === 'BR' || selectedAirport.icao.startsWith('SB') || selectedAirport.icao.startsWith('SD') || selectedAirport.icao.startsWith('SI') || selectedAirport.icao.startsWith('SJ') || selectedAirport.icao.startsWith('SN') || selectedAirport.icao.startsWith('SS') || selectedAirport.icao.startsWith('SW')) {
+    if (selectedAirport.country_code === 'BR' || selectedAirport.icao.startsWith('S')) {
       return `https://aisweb.decea.mil.br/?i=aerodromos&codigo=${selectedAirport.icao}`;
     }
     return `https://www.aviationweather.gov/metar/data?ids=${selectedAirport.icao}`;
@@ -177,17 +208,29 @@ const OfficialDetails = () => {
               </div>
             )}
 
-            {/* NOTAMs Section - Keep valid but simplified style */}
-            <div className="flex flex-col mt-2 px-4 pb-4">
-              <div className="flex items-center justify-between py-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100">NOTAMs Vigentes</h3>
-                <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full">3 Ativos</span>
+            {/* NOTAMs Section */}
+            {selectedAirport?.icao.startsWith('S') && (
+              <div className="flex flex-col mt-2 px-4 pb-4">
+                <div className="flex items-center justify-between py-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100">NOTAMs Vigentes</h3>
+                  {!notamLoading && <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full">{notams.length} Ativos</span>}
+                </div>
+                {notamLoading ? (
+                  <div className="flex items-center justify-center p-4">
+                    <span className="material-symbols-outlined animate-spin text-gray-400">sync</span>
+                  </div>
+                ) : notams.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {notams.map((notam, i) => (
+                      <NotamCard key={i} color={notam.text.includes('CLSD') ? 'red' : 'amber'} type={notam.category} title={notam.id} body={notam.text} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">Nenhum NOTAM ativo no momento.</p>
+                )}
               </div>
-              <div className="flex flex-col gap-3">
-                <NotamCard color="red" type="Crítico" title="RWY 15/33 CLSD" body="A0412/24 - RWY 15/33 CLOSED DUE TO MAINT." />
-                <NotamCard color="amber" type="Aviso" title="PAPI RWY 15 U/S" body="A0405/24 - PAPI U/S." />
-              </div>
-            </div>
+            )}
+
 
           </>
         )}
