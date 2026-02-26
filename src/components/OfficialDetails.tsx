@@ -30,9 +30,17 @@ const OfficialDetails = () => {
           setTaf(data.taf || null);
           setDecoded(parseMetar(data.raw));
 
-          if (data.observation_time) {
+          // Extract proper Zulu time directly from the raw METAR (e.g., 262200Z)
+          const timeMatch = data.raw.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+          if (timeMatch) {
+            setObsTime(`${timeMatch[2]}:${timeMatch[3]}Z`);
+          } else if (data.observation_time && data.observation_time !== 'N/A') {
             const d = new Date(data.observation_time);
-            setObsTime(`${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}Z`);
+            if (!isNaN(d.getTime())) {
+              setObsTime(`${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}Z`);
+            } else {
+              setObsTime('N/A');
+            }
           } else {
             setObsTime('N/A');
           }
@@ -49,17 +57,21 @@ const OfficialDetails = () => {
       try {
         const xmlString = await getAiswebData(selectedAirport.icao, 'notam');
         if (xmlString) {
-          // Simplified parsing of AISWEB NOTAM XML
+          // Parse AISWEB NOTAM XML
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-          const notamNodes = xmlDoc.querySelectorAll('notam item');
+
+          // AISWEB generally returns <aisweb><notam><item>...</item></notam></aisweb>
+          const notamNodes = xmlDoc.querySelectorAll('item');
 
           const parsedNotams = Array.from(notamNodes).map(node => {
+            // Some NOTAMs have <numero>, others use attribute `id` on the item
             const num = node.querySelector('numero')?.textContent || '';
-            const id = node.getAttribute('id') || num;
-            const e = node.querySelector('e')?.textContent || ''; // text of NOTAM
+            const e = node.querySelector('e')?.textContent || node.querySelector('E')?.textContent || ''; // text of NOTAM
+            const id = node.getAttribute('id') || num || 'NOTAM';
+
             return { id, text: e, category: 'Aviso' };
-          });
+          }).filter(n => n.text.trim() !== '');
 
           setNotams(parsedNotams);
         }
@@ -88,7 +100,7 @@ const OfficialDetails = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert('Boletim copiado para a área de transferência.');
+    alert('Informação copiada para a área de transferência.');
   };
 
   return (
@@ -102,7 +114,7 @@ const OfficialDetails = () => {
           </button>
           <div className="flex flex-col items-center">
             <h1 className="text-base font-bold leading-tight">Boletim Oficial</h1>
-            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">DECEA / REDEMET · Fonte Oficial</p>
+            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{(selectedAirport?.country_code === 'BR' || selectedAirport?.icao.startsWith('S')) ? 'DECEA / REDEMET / AISWEB' : 'NOAA / AVIATIONWEATHER'}</p>
           </div>
           <div className="w-10"></div> {/* Spacer for alignment */}
         </div>
@@ -142,7 +154,8 @@ const OfficialDetails = () => {
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase text-gray-500 font-bold mb-0.5">Fonte</span>
                   <a href={getSourceUrl()} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline decoration-blue-500">
-                    <span className="font-bold truncate">{metar.includes('=') ? 'REDEMET' : 'NOAA/AW'}</span>
+                    <span className="font-bold truncate">{(selectedAirport?.country_code === 'BR' || selectedAirport?.icao.startsWith('S')) ? 'REDEMET / AISWEB' : 'NOAA/AW'}</span>
+
                     <span className="material-symbols-outlined !text-[14px] text-gray-400">open_in_new</span>
                   </a>
                 </div>
