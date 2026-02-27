@@ -57,21 +57,28 @@ const OfficialDetails = () => {
       try {
         const xmlString = await getAiswebData(selectedAirport.icao, 'notam');
         if (xmlString) {
-          // Parse AISWEB NOTAM XML
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(xmlString, "text/xml");
 
-          // AISWEB generally returns <aisweb><notam><item>...</item></notam></aisweb>
-          const notamNodes = xmlDoc.querySelectorAll('item');
+          // AISWEB can return <notam><item></item></notam> or just <notam>text</notam>
+          let notamNodes = xmlDoc.querySelectorAll('item');
+          if (notamNodes.length === 0) {
+            notamNodes = xmlDoc.querySelectorAll('notam');
+          }
 
-          const parsedNotams = Array.from(notamNodes).map(node => {
-            // Some NOTAMs have <numero>, others use attribute `id` on the item
-            const num = node.querySelector('numero')?.textContent || '';
-            const e = node.querySelector('e')?.textContent || node.querySelector('E')?.textContent || ''; // text of NOTAM
-            const id = node.getAttribute('id') || num || 'NOTAM';
+          const parsedNotams = Array.from(notamNodes).map((node, index) => {
+            const num = node.querySelector('numero')?.textContent || node.querySelector('NUMERO')?.textContent || '';
+            let textContent = node.querySelector('e')?.textContent || node.querySelector('E')?.textContent;
 
-            return { id, text: e, category: 'Aviso' };
-          }).filter(n => n.text.trim() !== '');
+            if (!textContent) {
+              // Fallback to the whole node text if <e> item doesn't exist
+              textContent = node.textContent || '';
+            }
+
+            const id = node.getAttribute('id') || num || `NOTAM-${index}`;
+
+            return { id, text: textContent, category: 'Aviso' };
+          }).filter(n => n.text.trim() !== '' && n.text.trim() !== selectedAirport.icao); // filter empty or just ICAO echos.
 
           setNotams(parsedNotams);
         }
