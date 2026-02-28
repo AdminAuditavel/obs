@@ -14,7 +14,7 @@ export interface MetarData {
   taf?: string;
 }
 
-const calculateFlightCategory = (raw: string): string => {
+export const calculateFlightCategory = (raw: string): string => {
   if (!raw) return 'UNK';
   const r = raw.toUpperCase();
   if (r.includes('CAVOK')) return 'VFR';

@@ -58,39 +58,47 @@ export const searchAirports = async (query: string): Promise<any[]> => {
     const items = xmlDoc.getElementsByTagName("item");
     const results: any[] = [];
 
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        
-        // Helper to get text content from multiple potential tag names
-        const getTagContent = (tagNames: string[]) => {
-            for (const tagName of tagNames) {
-                const elements = item.getElementsByTagName(tagName);
-                if (elements.length > 0 && elements[0].textContent) {
-                    return elements[0].textContent.trim();
-                }
+    const getTagContentFrom = (element: Element | Document, tagNames: string[]) => {
+        for (const tagName of tagNames) {
+            const elements = element.getElementsByTagName(tagName);
+            if (elements.length > 0 && elements[0].textContent) {
+                return elements[0].textContent.trim();
             }
-            return "";
-        };
+        }
+        return "";
+    };
 
-        const icao = getTagContent(["indicador", "AeroCode", "id"]);
-        const name = getTagContent(["nome", "AeroName", "name"]);
-        const city = getTagContent(["cidade", "Cidade", "city"]);
-        const state = getTagContent(["uf", "UF", "state"]);
-        const lat = getTagContent(["lat", "Lat"]);
-        const lon = getTagContent(["lng", "Lng", "Lon"]);
+    if (items.length > 0) {
+        // Handle list format (<rotaer><item>...</item></rotaer>)
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const icao = getTagContentFrom(item, ["indicador", "AeroCode", "id"]);
+            if (!icao) continue;
 
-        // Skip items without an ICAO code
-        if (!icao) continue;
-
-        results.push({
-            id: icao || Math.random().toString(),
-            icao: icao,
-            name: name || icao,
-            city: city,
-            state: state,
-            lat: parseFloat(lat || "0"),
-            lon: parseFloat(lon || "0"),
-        });
+            results.push({
+                id: icao,
+                icao: icao,
+                name: getTagContentFrom(item, ["nome", "AeroName", "name"]) || icao,
+                city: getTagContentFrom(item, ["cidade", "Cidade", "city"]),
+                state: getTagContentFrom(item, ["uf", "UF", "state"]),
+                lat: parseFloat(getTagContentFrom(item, ["lat", "Lat"]) || "0"),
+                lon: parseFloat(getTagContentFrom(item, ["lng", "Lng", "Lon", "Lon"]) || "0"),
+            });
+        }
+    } else {
+        // Handle single-result format (<aisweb><AeroCode>...</AeroCode></aisweb>)
+        const icao = getTagContentFrom(xmlDoc, ["indicador", "AeroCode", "id"]);
+        if (icao && icao.length >= 3) {
+            results.push({
+                id: icao,
+                icao: icao,
+                name: getTagContentFrom(xmlDoc, ["nome", "AeroName", "name"]) || icao,
+                city: getTagContentFrom(xmlDoc, ["cidade", "Cidade", "city"]),
+                state: getTagContentFrom(xmlDoc, ["uf", "UF", "state"]),
+                lat: parseFloat(getTagContentFrom(xmlDoc, ["lat", "Lat"]) || "0"),
+                lon: parseFloat(getTagContentFrom(xmlDoc, ["lng", "Lng", "Lon", "Lon"]) || "0"),
+            });
+        }
     }
 
     console.log(`[DEBUG] AISWEB search results found: ${results.length}`);
