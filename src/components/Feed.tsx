@@ -8,6 +8,7 @@ import { parsePhoneticString } from '../utils/phonetic';
 import { supabase } from '../supabaseClient';
 import { Airport } from '../AppContext';
 import { getWeather } from '../services/weatherService';
+import { searchAirports } from '../services/aiswebService';
 import { UserBadge } from './UserBadge';
 import { parseMetar } from '../utils/metarParser';
 import { TimeTimeline } from './TimeTimeline';
@@ -58,20 +59,19 @@ const Feed = () => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length > 1) {
         setIsSearching(true);
-        const { data, error } = await supabase
-          .from('airports')
-          .select('*')
-          .or(`icao.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%`)
-          .limit(10);
-
-        if (!error && data) {
-          setSearchResults(data);
+        try {
+          const results = await searchAirports(searchQuery);
+          setSearchResults(results);
+        } catch (error) {
+          console.error("AISWEB search failed:", error);
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
         }
-        setIsSearching(false);
       } else {
         setSearchResults([]);
       }
-    }, 300);
+    }, 400);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);

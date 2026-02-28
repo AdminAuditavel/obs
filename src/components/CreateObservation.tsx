@@ -6,6 +6,7 @@ import { IMAGES } from '../constants';
 import { supabase } from '../supabaseClient';
 import imageCompression from 'browser-image-compression';
 import { getWeather } from '../services/weatherService';
+import { searchAirports } from '../services/aiswebService';
 
 const CreateObservation = () => {
   const navigate = useNavigate();
@@ -66,6 +67,29 @@ const CreateObservation = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Airport[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // AISWEB Search Effect
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.length > 1) {
+        setIsSearching(true);
+        try {
+          const results = await searchAirports(searchQuery);
+          // Map to local Airport type if needed (aiswebService already does mostly)
+          setSearchResults(results);
+        } catch (error) {
+          console.error("AISWEB search failed:", error);
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   // Camera / Image State
   // If editing, we might have an image already.
@@ -573,7 +597,7 @@ const CreateObservation = () => {
             <label className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">Aeroporto (ICAO)</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">flight_takeoff</span>
-              <input className="w-full pl-12 pr-4 py-4 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-lg font-semibold uppercase placeholder-slate-300" placeholder={localAirport.icao} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value.toUpperCase())} onFocus={() => setSearchResults([])} />
+              <input className="w-full pl-12 pr-4 py-4 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-lg font-semibold uppercase placeholder-slate-300" placeholder={localAirport.icao} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value.toUpperCase())} onFocus={() => { if (!searchQuery) setSearchResults([]); }} />
               {!searchQuery && (<span className="absolute left-12 top-1/2 -translate-y-1/2 text-lg font-bold pointer-events-none text-slate-900 dark:text-white">{localAirport.icao}</span>)}
             </div>
             {/* Search Results */}

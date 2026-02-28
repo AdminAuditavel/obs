@@ -11,11 +11,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { icao, area = 'rotaer' } = await req.json();
-
-    if (!icao) {
-      throw new Error('ICAO code is required');
-    }
+    const body = await req.json();
+    const { area = 'rotaer', row = 10 } = body;
 
     const API_KEY = Deno.env.get('AISWEB_API_KEY');
     const API_PASS = Deno.env.get('AISWEB_API_PASS');
@@ -24,8 +21,32 @@ Deno.serve(async (req) => {
       throw new Error('AISWEB credentials not configured.');
     }
 
-    const url = `http://www.aisweb.aer.mil.br/api/?apiKey=${API_KEY}&apiPass=${API_PASS}&area=${area}&row=10&icaoCode=${icao}`;
-    console.log(`Fetching from AISWEB: ${area} for ${icao}`);
+    // Build the query string dynamically based on provided fields
+    const params = new URLSearchParams({
+      apiKey: API_KEY,
+      apiPass: API_PASS,
+      area,
+      row: row.toString(),
+    });
+
+    // Add search filters if provided
+    if (body.icaoCode) params.append('icaoCode', body.icaoCode);
+    if (body.name) params.append('name', body.name);
+    if (body.loc) params.append('loc', body.loc);
+    if (body.state) params.append('state', body.state);
+
+    // If providing a search query but no specific field, we'll try icaoCode as default or search logic
+    if (body.search && !body.icaoCode && !body.name && !body.loc) {
+        // Simple heuristic: if 4 chars and starts with S, likely ICAO
+        if (body.search.length === 4 && body.search.toUpperCase().startsWith('S')) {
+            params.append('icaoCode', body.search.toUpperCase());
+        } else {
+            params.append('loc', body.search);
+        }
+    }
+
+    const url = `http://www.aisweb.aer.mil.br/api/?${params.toString()}`;
+    console.log(`Fetching from AISWEB: ${url}`);
 
     const response = await fetch(url);
     if (!response.ok) {
