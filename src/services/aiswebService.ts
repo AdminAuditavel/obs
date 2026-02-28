@@ -22,7 +22,7 @@ export interface AiswebRotaer {
 export const getAiswebData = async (icao: string, area: string = 'rotaer'): Promise<any> => {
   console.log(`[DEBUG] getAiswebData ingressando para ${icao}, área: ${area}`);
   try {
-    const { data, error } = await supabase.functions.invoke('get_aisweb', {
+    const { data, error } = await supabase.functions.invoke('get_aisweb_v2', {
       body: { icaoCode: icao, area },
     });
 
@@ -46,7 +46,7 @@ export const searchAirports = async (query: string): Promise<any[]> => {
   if (!query || query.length < 2) return [];
 
   try {
-    const { data, error } = await supabase.functions.invoke('get_aisweb', {
+    const { data, error } = await supabase.functions.invoke('get_aisweb_v2', {
       body: { search: query, area: 'rotaer' },
     });
 

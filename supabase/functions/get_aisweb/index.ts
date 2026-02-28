@@ -37,11 +37,13 @@ Deno.serve(async (req) => {
 
     // If providing a search query but no specific field, we'll try icaoCode as default or search logic
     if (body.search && !body.icaoCode && !body.name && !body.loc) {
-        // Simple heuristic: if 4 chars and starts with S, likely ICAO
-        if (body.search.length === 4 && body.search.toUpperCase().startsWith('S')) {
-            params.append('icaoCode', body.search.toUpperCase());
+        const query = body.search.toUpperCase();
+        // Heuristic: if starts with S/O/P/N and 2-4 chars, likely ICAO (Brazil uses S- prefix, some others too)
+        // Or if it's alphanumeric and short. 
+        if (query.length >= 2 && query.length <= 4 && (query.startsWith('S') || query.startsWith('O'))) {
+            params.append('icaoCode', query);
         } else {
-            params.append('loc', body.search);
+            params.append('name', query); // name search is usually broader than loc
         }
     }
 
