@@ -65,10 +65,19 @@ const OfficialDetails = () => {
     const fetchNotams = async () => {
       setNotamLoading(true);
       try {
+        console.log(`[DEBUG] fetchNotams iniciado para ${selectedAirport.icao}`);
         const xmlString = await getAiswebData(selectedAirport.icao, 'notam');
+        console.log(`[DEBUG] XML recebido (comprimento): ${xmlString?.length || 0}`);
+
         if (xmlString) {
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+          // Verificar erros de parsing do DOMParser
+          const parseError = xmlDoc.getElementsByTagName("parsererror");
+          if (parseError.length > 0) {
+            console.error("[DEBUG] Erro de parsing XML:", parseError[0].textContent);
+          }
 
           // AISWEB can return <notam><item></item></notam> or just <notam>text</notam>
           let notamNodes = xmlDoc.querySelectorAll('item');
@@ -76,34 +85,39 @@ const OfficialDetails = () => {
             notamNodes = xmlDoc.querySelectorAll('notam');
           }
 
-          const parsedNotams = Array.from(notamNodes)
-            .map((node, index) => {
-              const num =
-                node.querySelector('numero')?.textContent ||
-                node.querySelector('NUMERO')?.textContent ||
-                '';
+          const parsedNotams = Array.from(notamNodes).map((node, index) => {
+            const num = node.querySelector('numero')?.textContent ||
+              node.querySelector('NUMERO')?.textContent ||
+              node.querySelector('n')?.textContent ||
+              node.querySelector('N')?.textContent || '';
+            let textContent = node.querySelector('e')?.textContent || node.querySelector('E')?.textContent;
 
-              let textContent =
-                node.querySelector('e')?.textContent ||
-                node.querySelector('E')?.textContent ||
-                '';
+            if (!textContent) {
+              // Fallback to the whole node text if <e> item doesn't exist, but clean it up
+              textContent = node.textContent?.trim() || '';
+            }
 
-              if (!textContent) {
-                // Fallback to the whole node text if <e> item doesn't exist
-                textContent = node.textContent || '';
-              }
+            // Remove excessive whitespace and common AISWEB echo artifacts
+            textContent = textContent.replace(/\s+/g, ' ').trim();
 
-              const id = node.getAttribute('id') || num || `NOTAM-${index}`;
-              return { id, text: textContent, category: 'Aviso' };
-            })
-            .filter(n => n.text.trim() !== '' && n.text.trim() !== selectedAirport.icao); // filter empty or just ICAO echos.
+            const id = node.getAttribute('id') || num || `NOTAM-${index}`;
+
+            return { id, text: textContent, category: 'Aviso' };
+          }).filter(n => {
+            const trimmed = n.text.trim();
+            return trimmed !== '' &&
+              trimmed !== selectedAirport.icao &&
+              !trimmed.includes('Nenhum NOTAM encontrado') &&
+              !trimmed.includes('No NOTAMs found');
+          });
 
           setNotams(parsedNotams);
+          console.log(`[DEBUG] NOTAMs processados: ${parsedNotams.length}`);
         } else {
-          setNotams([]);
+          console.warn("[DEBUG] Nenhum XML retornado para NOTAMs.");
         }
       } catch (err) {
-        console.error('Failed to fetch notams', err);
+        console.error("[DEBUG] Falha ao buscar NOTAMs:", err);
       } finally {
         setNotamLoading(false);
       }
@@ -277,9 +291,8 @@ const OfficialDetails = () => {
                   <WeatherTile
                     icon="cloud"
                     value={decoded.ceiling_str || 'N/A'}
-                    label={`Nuvens ${
-                      decoded.ceiling !== 'N/A' && decoded.ceiling !== 'None' ? `(${decoded.ceiling})` : ''
-                    }`}
+                    label={`Nuvens ${decoded.ceiling !== 'N/A' && decoded.ceiling !== 'None' ? `(${decoded.ceiling})` : ''
+                      }`}
                   />
                   <WeatherTile icon="thermostat" value={decoded.temperature || 'N/A'} label="Temp / Orvalho" />
                   <WeatherTile icon="speed" value={decoded.pressure || 'N/A'} label="QNH / Altímetro" />

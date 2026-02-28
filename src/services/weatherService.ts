@@ -51,7 +51,7 @@ const calculateFlightCategory = (raw: string): string => {
 
 export const getWeather = async (icao: string): Promise<MetarData | null> => {
   try {
-    const { data, error } = await supabase.functions.invoke('get_weather', {
+    const { data, error } = await supabase.functions.invoke('get_weather_v2', {
       body: { icao },
     });
 

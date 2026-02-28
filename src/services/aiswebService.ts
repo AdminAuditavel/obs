@@ -20,17 +20,22 @@ export interface AiswebRotaer {
 }
 
 export const getAiswebData = async (icao: string, area: string = 'rotaer'): Promise<any> => {
+  console.log(`[DEBUG] getAiswebData ingressando para ${icao}, área: ${area}`);
   try {
-    const { data, error } = await supabase.functions.invoke('get_aisweb', {
+    console.log(`[DEBUG] Invocando função de borda: get_aisweb_v2 para ${icao}`);
+    const { data, error } = await supabase.functions.invoke('get_aisweb_v2', {
       body: { icao, area },
     });
 
     if (error) {
-      console.error(`Error invoking get_aisweb (${area}):`, error);
+      console.error(`[DEBUG] Erro ao invocar get_aisweb_v2 (${area}):`, error);
       throw error;
     }
 
+    console.log(`[DEBUG] Resposta recebida para ${icao} (${area}):`, data);
+
     if (data && data.xml) {
+      console.log('AISWEB XML:', typeof data.xml === 'string' ? data.xml.substring(0, 1500) : data.xml);
       return data.xml;
     }
     
