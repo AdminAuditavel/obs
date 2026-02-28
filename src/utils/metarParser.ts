@@ -10,6 +10,7 @@ export interface ParsedMetar {
   condition: string;
   temperature?: string;
   pressure?: string;
+  redemetColor: 'green' | 'yellow' | 'red';
   tooltips: {
     wind: string;
     visibility: string;
@@ -23,6 +24,7 @@ export interface ParsedMetar {
 export const parseMetar = (raw: string): ParsedMetar => {
   if (!raw) return { 
     type: 'METAR', wind: 'N/A', visibility: 'N/A', vis_meters: 9999, ceiling: 'N/A', ceiling_ft: 10000, ceiling_str: 'N/A', condition: 'N/A',
+    redemetColor: 'green',
     tooltips: { wind: '', visibility: '', ceiling: '', condition: '' }
   };
   
@@ -197,14 +199,25 @@ export const parseMetar = (raw: string): ParsedMetar => {
   };
 
   const tooltips = {
-      wind: wind !== 'N/A' ? `Vento de ${wind.split('/')[0]} com ${wind.split('/')[1]}`.replace('kt', ' nós') : 'Sem dados de vento',
-      visibility: visibility !== 'N/A' ? `Visibilidade de ${visibility}` : 'Sem dados de visibilidade',
-      ceiling: ceiling_str !== 'N/A' && ceiling !== 'N/A' ? `${getCloudDescription(ceiling.substring(0,3))} a ${ceiling_str.replace("'", " pés")}` : (ceiling_str === 'Sem Teto' ? 'Céu claro / Sem teto' : 'Sem dados de teto'),
-      condition: decodeCondition(condition),
-      temp: temperature !== 'N/A' ? `Temperatura: ${temperature.split(' / ')[0]}, Ponto de Orvalho: ${temperature.split(' / ')[1]}` : 'Sem dados de temperatura',
-      pressure: pressure !== 'N/A' ? `Pressão QNH: ${pressure}` : 'Sem dados de pressão'
+    wind: wind !== 'N/A' ? `Vento de ${wind.split('/')[0]} com ${wind.split('/')[1]}`.replace('kt', ' nós') : 'Sem dados de vento',
+    visibility: visibility !== 'N/A' ? `Visibilidade de ${visibility}` : 'Sem dados de visibilidade',
+    ceiling: ceiling_str !== 'N/A' && ceiling !== 'N/A' ? `${getCloudDescription(ceiling.substring(0, 3))} a ${ceiling_str.replace("'", " pés")}` : (ceiling_str === 'Sem Teto' ? 'Céu claro / Sem teto' : 'Sem dados de teto'),
+    condition: decodeCondition(condition),
+    temp: temperature !== 'N/A' ? `Temperatura: ${temperature.split(' / ')[0]}, Ponto de Orvalho: ${temperature.split(' / ')[1]}` : 'Sem dados de temperatura',
+    pressure: pressure !== 'N/A' ? `Pressão QNH: ${pressure}` : 'Sem dados de pressão'
   };
 
-  return { type, wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, temperature, pressure, tooltips };
+  // REDEMET Color Logic
+  // RED: Vis < 1500m OR Ceiling < 600ft
+  // YELLOW: Vis < 5000m OR Ceiling < 1500ft
+  // GREEN: Else
+  let redemetColor: 'green' | 'yellow' | 'red' = 'green';
+  if (vis_meters < 1500 || (ceiling_ft < 600 && ceiling !== 'None')) {
+    redemetColor = 'red';
+  } else if (vis_meters < 5000 || (ceiling_ft < 1500 && ceiling !== 'None')) {
+    redemetColor = 'yellow';
+  }
+
+  return { type, wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, temperature, pressure, redemetColor, tooltips };
 };
 

@@ -42,7 +42,7 @@ const calculateFlightCategory = (raw: string): string => {
     ceilingFt = Math.min(...heights);
   }
 
-  // Categories
+  // Categories (Based on standard ICAO, very similar to REDEMET colors but shifted)
   if (ceilingFt < 500 || visMeters < 1600) return 'LIFR';
   if (ceilingFt < 1000 || visMeters < 5000) return 'IFR';
   if (ceilingFt <= 3000 || visMeters <= 8000) return 'MVFR';
