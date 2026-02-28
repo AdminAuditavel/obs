@@ -144,7 +144,10 @@ const OfficialDetails = () => {
 
       await fetchWeather();
 
-      if (selectedAirport.icao.startsWith('S') || selectedAirport.country_code === 'BR') {
+      const icao = selectedAirport.icao?.toUpperCase() || '';
+      const isBrazil = icao.startsWith('S') || selectedAirport.country_code === 'BR';
+
+      if (isBrazil) {
         await fetchNotams();
       }
     };
@@ -329,7 +332,7 @@ const OfficialDetails = () => {
             )}
 
             {/* NOTAMs Section */}
-            {selectedAirport?.icao.startsWith('S') && (
+            {(selectedAirport?.icao?.toUpperCase().startsWith('S') || selectedAirport?.country_code === 'BR') && (
               <div className="flex flex-col mt-2 px-4 pb-4">
                 <div className="flex items-center justify-between py-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100">
