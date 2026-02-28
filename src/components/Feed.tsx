@@ -80,7 +80,6 @@ const Feed = () => {
   const [timeZ, setTimeZ] = useState("");
   const [metar, setMetar] = useState<string | null>(null);
   const [taf, setTaf] = useState<string | null>(null);
-  const [flightCategory, setFlightCategory] = useState<string | null>(null);
   const [isLoadingMetar, setIsLoadingMetar] = useState(false);
 
   useEffect(() => {
@@ -103,7 +102,6 @@ const Feed = () => {
       setIsLoadingMetar(true);
       setMetar(null); // Reset while loading
       setTaf(null);
-      setFlightCategory(null);
 
       try {
         const data = await getWeather(selectedAirport.icao);
@@ -111,7 +109,6 @@ const Feed = () => {
           setMetar(data.raw || "METAR não disponível.");
           // Explicitly set TAF if available, otherwise null.
           setTaf(data.taf || null);
-          setFlightCategory(data.flight_category || null);
         } else {
           setMetar("METAR não disponível no momento.");
         }
@@ -413,7 +410,6 @@ const Feed = () => {
               <div className="p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
                     <p className="text-[#0c121d] dark:text-white text-sm font-bold uppercase tracking-wider">Resumo Oficial</p>
                     {metar && (
                       <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${parseMetar(metar).type === 'SPECI'
@@ -437,7 +433,7 @@ const Feed = () => {
                     )}
                   </div>
                   {metar && (
-                    <FlightCategoryBadge category={flightCategory} />
+                    <FlightCategoryBadge category={parseMetar(metar).flightCategory} />
                   )}
                 </div>
 

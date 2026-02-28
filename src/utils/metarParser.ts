@@ -11,6 +11,7 @@ export interface ParsedMetar {
   temperature?: string;
   pressure?: string;
   redemetColor: 'green' | 'yellow' | 'red';
+  flightCategory: string;
   tooltips: {
     wind: string;
     visibility: string;
@@ -25,6 +26,7 @@ export const parseMetar = (raw: string): ParsedMetar => {
   if (!raw) return { 
     type: 'METAR', wind: 'N/A', visibility: 'N/A', vis_meters: 9999, ceiling: 'N/A', ceiling_ft: 10000, ceiling_str: 'N/A', condition: 'N/A',
     redemetColor: 'green',
+    flightCategory: 'VFR',
     tooltips: { wind: '', visibility: '', ceiling: '', condition: '' }
   };
   
@@ -218,6 +220,12 @@ export const parseMetar = (raw: string): ParsedMetar => {
     redemetColor = 'yellow';
   }
 
-  return { type, wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, temperature, pressure, redemetColor, tooltips };
+  // Flight Category (ICAO Standard)
+  let flightCategory = 'VFR';
+  if (ceiling_ft < 500 || vis_meters < 1600) flightCategory = 'LIFR';
+  else if (ceiling_ft < 1000 || vis_meters < 5000) flightCategory = 'IFR';
+  else if (ceiling_ft <= 3000 || vis_meters <= 8000) flightCategory = 'MVFR';
+
+  return { type, wind, visibility, vis_meters, ceiling, ceiling_ft, ceiling_str, condition, temperature, pressure, redemetColor, flightCategory, tooltips };
 };
 
