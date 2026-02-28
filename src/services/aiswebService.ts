@@ -60,17 +60,40 @@ export const searchAirports = async (query: string): Promise<any[]> => {
 
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        
+        // Helper to get text content from multiple potential tag names
+        const getTagContent = (tagNames: string[]) => {
+            for (const tagName of tagNames) {
+                const elements = item.getElementsByTagName(tagName);
+                if (elements.length > 0 && elements[0].textContent) {
+                    return elements[0].textContent.trim();
+                }
+            }
+            return "";
+        };
+
+        const icao = getTagContent(["indicador", "AeroCode", "id"]);
+        const name = getTagContent(["nome", "AeroName", "name"]);
+        const city = getTagContent(["cidade", "Cidade", "city"]);
+        const state = getTagContent(["uf", "UF", "state"]);
+        const lat = getTagContent(["lat", "Lat"]);
+        const lon = getTagContent(["lng", "Lng", "Lon"]);
+
+        // Skip items without an ICAO code
+        if (!icao) continue;
+
         results.push({
-            id: item.getElementsByTagName("id")[0]?.textContent || Math.random().toString(),
-            icao: item.getElementsByTagName("AeroCode")[0]?.textContent || "",
-            name: item.getElementsByTagName("AeroName")[0]?.textContent || "",
-            city: item.getElementsByTagName("Cidade")[0]?.textContent || "",
-            state: item.getElementsByTagName("UF")[0]?.textContent || "",
-            lat: parseFloat(item.getElementsByTagName("Lat")[0]?.textContent || "0"),
-            lon: parseFloat(item.getElementsByTagName("Lng")[0]?.textContent || "0"),
+            id: icao || Math.random().toString(),
+            icao: icao,
+            name: name || icao,
+            city: city,
+            state: state,
+            lat: parseFloat(lat || "0"),
+            lon: parseFloat(lon || "0"),
         });
     }
 
+    console.log(`[DEBUG] AISWEB search results found: ${results.length}`);
     return results;
   } catch (error) {
     console.error('AISWEB search error:', error);
