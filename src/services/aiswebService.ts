@@ -52,7 +52,8 @@ export const searchAirports = async (query: string): Promise<any[]> => {
     const { data: localData, error: localError } = await supabase
       .from('airports')
       .select('icao, name, city, state, latitude, longitude')
-      .or(`icao.ilike.%${upperQuery}%,name.ilike.%${upperQuery}%,city.ilike.%${upperQuery}%`)
+      .or(`icao.ilike.${upperQuery}%,name.ilike.%${upperQuery}%,city.ilike.%${upperQuery}%`)
+      .order('icao')
       .limit(15);
 
     if (localError) throw localError;
