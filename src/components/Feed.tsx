@@ -314,6 +314,9 @@ const Feed = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar..."
               className="w-full bg-transparent border-none outline-none text-xs text-white placeholder:text-gray-300 font-medium h-full"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck="false"
             />
             <div className="flex items-center gap-1">
               {searchQuery && (

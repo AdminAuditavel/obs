@@ -43,9 +43,10 @@ export const getAiswebData = async (icao: string, area: string = 'rotaer'): Prom
 };
 
 export const searchAirports = async (query: string): Promise<any[]> => {
-  if (!query || query.length < 2) return [];
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery || trimmedQuery.length < 2) return [];
 
-  const upperQuery = query.toUpperCase();
+  const upperQuery = trimmedQuery.toUpperCase();
 
   try {
     console.log(`[DEBUG] Searching local airports for: ${upperQuery}`);
