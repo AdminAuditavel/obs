@@ -21,8 +21,6 @@ Deno.serve(async (req) => {
 
     let metarData: any = null;
     let tafData: string | null = null;
-    let debugMessages: string[] = [];
-    let rawRedemetJson: any = null;
 
     // 1. Try REDEMET (Best for Brazil)
     const redemetKey = Deno.env.get('REDEMET_API_KEY');
@@ -52,10 +50,9 @@ Deno.serve(async (req) => {
 
         // Process METAR
         if (metarRes.ok) {
-           rawRedemetJson = await metarRes.json();
-           if (rawRedemetJson.status && rawRedemetJson.data && rawRedemetJson.data.data && rawRedemetJson.data.data.length > 0) {
-             const messages = rawRedemetJson.data.data;
-             debugMessages = messages.map((m: any) => m.mens);
+           const json = await metarRes.json();
+           if (json.status && json.data && json.data.data && json.data.data.length > 0) {
+             const messages = json.data.data;
              
              // Sort messages by time and type (SPECI priority)
              const sorted = messages.sort((a: any, b: any) => {
@@ -89,7 +86,6 @@ Deno.serve(async (req) => {
 
       } catch (err) {
         console.error('REDEMET failed:', err);
-        rawRedemetJson = { error: err.message };
       }
     }
 
@@ -170,12 +166,7 @@ Deno.serve(async (req) => {
 
     // Return Data
     return new Response(
-      JSON.stringify([{
-        ...metarData,
-        version: "3.0.1",
-        debug_messages: debugMessages,
-        raw_redemet_json: rawRedemetJson
-      }]),
+      JSON.stringify([metarData]),
       { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
 
